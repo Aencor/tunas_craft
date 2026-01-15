@@ -324,6 +324,19 @@
             loader.load('public/images/Tuna-s_craft.stl', function (geometry) {
                 // Center geometry
                 geometry.center();
+                geometry.computeBoundingBox();
+                
+                // Auto-scale logic
+                const boundingBox = geometry.boundingBox;
+                const size = new THREE.Vector3();
+                boundingBox.getSize(size);
+                
+                // Determine the largest dimension
+                const maxDim = Math.max(size.x, size.y, size.z);
+                
+                // Target size (e.g., 60 units) to fit well within the camera view (z=150)
+                const targetSize = 60; 
+                const scaleFactor = targetSize / maxDim;
                 
                 // Material - Metallic/Plastic look
                 const material = new THREE.MeshPhongMaterial({ 
@@ -335,9 +348,9 @@
                 
                 const mesh = new THREE.Mesh(geometry, material);
                 
-                // Adjust rotation/scale if needed based on the specific model
-                mesh.rotation.x = -Math.PI / 2; // Usually STLs are exporting with Z up
-                mesh.scale.set(0.5, 0.5, 0.5); // Adjust scale to fit
+                // Apply calculated scale
+                mesh.rotation.x = -Math.PI / 2; // Z-up fix
+                mesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
 
                 scene.add(mesh);
 
