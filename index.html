@@ -12,6 +12,10 @@
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     
+    <!-- Three.js & STLLoader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    
     <!-- Tailwind Config -->
     <script>
       tailwind.config = {
@@ -117,8 +121,8 @@
           </div>
         </div>
         <div class="flex-1 relative z-10 animate-float">
-          <div class="relative w-80 h-80 md:w-[500px] md:h-[500px] mx-auto">
-             <img src="public/logo.png" alt="3D Printing Illustration" class="w-full h-full object-contain filter drop-shadow-2xl">
+          <div id="hero-3d" class="relative w-80 h-80 md:w-[500px] md:h-[500px] mx-auto cursor-move" title="¡Arrastrame para rotar!">
+             <!-- 3D Canvas will be injected here -->
           </div>
         </div>
       </div>
@@ -165,7 +169,10 @@
                 </div>
                 <div>
                   <h4 class="text-xl font-bold text-white">Punto de Entrega Principal</h4>
-                  <p class="text-gray-400">Metro Chabacano, CDMX</p>
+                  <a href="https://maps.app.goo.gl/vVdkQ1RTzjMqWNRD8" target="_blank" class="text-brand-blue hover:text-brand-orange transition-colors flex items-center gap-1">
+                      Metro Chabacano, CDMX
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                  </a>
                   <p class="text-sm text-brand-blue font-semibold mt-1">Sábados: 11:00 am - 3:00 pm</p>
                 </div>
               </li>
@@ -202,7 +209,13 @@
 
     <!-- Gallery -->
     <section id="gallery" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <h2 class="font-display text-4xl font-bold mb-12 text-center text-white">Galería de <span class="text-brand-orange">Trabajos</span></h2>
+      <h2 class="font-display text-4xl font-bold mb-6 text-center text-white">Galería de <span class="text-brand-orange">Trabajos</span></h2>
+      
+      <!-- Filter Buttons Container -->
+      <div id="filter-container" class="flex flex-wrap justify-center gap-3 mb-10">
+        <!-- Buttons will be injected here -->
+      </div>
+
       <div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
     </section>
 
@@ -235,13 +248,29 @@
     </section>
 
     <!-- Footer -->
-    <footer class="bg-black py-12 border-t border-white/10">
-      <div class="max-w-7xl mx-auto px-4 text-center">
-        <div class="flex justify-center gap-8 mb-8">
-           <a href="https://www.facebook.com/tunascraft3d" target="_blank" class="text-gray-400 hover:text-white transition-colors">Facebook</a>
-           <a href="https://www.instagram.com/tunas_craft" target="_blank" class="text-gray-400 hover:text-white transition-colors">Instagram</a>
+    <footer class="bg-black py-16 border-t border-white/10 relative overflow-hidden">
+      <!-- Background decoration -->
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-1 bg-gradient-to-r from-transparent via-brand-blue to-transparent opacity-50"></div>
+
+      <div class="max-w-7xl mx-auto px-4 text-center relative z-10">
+        <h3 class="font-display text-2xl font-bold text-white mb-8">Síguenos en nuestras redes</h3>
+        
+        <div class="flex justify-center gap-10 mb-10">
+           <a href="https://www.facebook.com/tunascraft3d" target="_blank" class="group flex flex-col items-center gap-2 text-gray-400 hover:text-[#1877F2] transition-colors duration-300">
+               <div class="p-4 bg-white/5 rounded-2xl group-hover:bg-[#1877F2]/10 group-hover:scale-110 transition-all duration-300 border border-white/5 group-hover:border-[#1877F2]/50 shadow-lg shadow-black/50">
+                   <svg class="w-10 h-10 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+               </div>
+               <span class="font-medium text-sm">Facebook</span>
+           </a>
+           
+           <a href="https://www.instagram.com/tunas_craft" target="_blank" class="group flex flex-col items-center gap-2 text-gray-400 hover:text-[#E4405F] transition-colors duration-300">
+               <div class="p-4 bg-white/5 rounded-2xl group-hover:bg-[#E4405F]/10 group-hover:scale-110 transition-all duration-300 border border-white/5 group-hover:border-[#E4405F]/50 shadow-lg shadow-black/50">
+                    <svg class="w-10 h-10 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+               </div>
+               <span class="font-medium text-sm">Instagram</span>
+           </a>
         </div>
-        <p class="text-gray-500">&copy; 2024 Tuna's Craft. Hecho con 💙 y 🟠.</p>
+        <p class="text-gray-500 font-medium text-sm">&copy; 2024 Tuna's Craft. Hecho con 💙 y 🟠.</p>
       </div>
     </footer>
 
@@ -257,15 +286,133 @@
           $('#mobile-menu').slideToggle();
         });
 
+        // 3D Model Logic
+        function init3D() {
+            const container = document.getElementById('hero-3d');
+            if (!container) return;
+
+            const scene = new THREE.Scene();
+            
+            // Camera setup
+            const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0, 150);
+
+            // Renderer setup
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1); // White directional light
+            dirLight.position.set(10, 10, 10);
+            scene.add(dirLight);
+            
+            const orangeLight = new THREE.PointLight(0xF59E0B, 2, 100); // Brand Orange
+            orangeLight.position.set(-20, 0, 20);
+            scene.add(orangeLight);
+
+            const blueLight = new THREE.PointLight(0x2563EB, 2, 100); // Brand Blue
+            blueLight.position.set(20, 0, 20);
+            scene.add(blueLight);
+
+            // Load STL
+            const loader = new THREE.STLLoader();
+            loader.load('public/images/Tuna-s_craft.stl', function (geometry) {
+                // Center geometry
+                geometry.center();
+                
+                // Material - Metallic/Plastic look
+                const material = new THREE.MeshPhongMaterial({ 
+                    color: 0xffffff, 
+                    specular: 0x111111, 
+                    shininess: 200,
+                    vertexColors: false
+                });
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                
+                // Adjust rotation/scale if needed based on the specific model
+                mesh.rotation.x = -Math.PI / 2; // Usually STLs are exporting with Z up
+                mesh.scale.set(0.5, 0.5, 0.5); // Adjust scale to fit
+
+                scene.add(mesh);
+
+                // Animation Loop
+                let isDragging = false;
+                let previousMousePosition = { x: 0, y: 0 };
+                let targetRotationX = -Math.PI / 2;
+                let targetRotationY = 0;
+
+                // Auto rotation
+                const animate = function () {
+                    requestAnimationFrame(animate);
+
+                    if (!isDragging) {
+                        mesh.rotation.z += 0.005; // Auto rotate on vertical axis (Z in this orientation)
+                    }
+
+                    renderer.render(scene, camera);
+                };
+
+                animate();
+                
+                // Simple Mouse Interaction
+                container.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    previousMousePosition = { x: e.offsetX, y: e.offsetY };
+                });
+
+                document.addEventListener('mouseup', () => isDragging = false);
+
+                container.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        const deltaMove = {
+                            x: e.offsetX - previousMousePosition.x,
+                            y: e.offsetY - previousMousePosition.y
+                        };
+
+                        const rotationSpeed = 0.005;
+                        mesh.rotation.z += deltaMove.x * rotationSpeed;
+                        mesh.rotation.x += deltaMove.y * rotationSpeed;
+
+                        previousMousePosition = { x: e.offsetX, y: e.offsetY };
+                    }
+                });
+                
+                // Handle Window Resize
+                window.addEventListener('resize', () => {
+                   if(container) {
+                       camera.aspect = container.clientWidth / container.clientHeight;
+                       camera.updateProjectionMatrix();
+                       renderer.setSize(container.clientWidth, container.clientHeight);
+                   }
+                });
+
+            }, undefined, function (error) {
+                console.error("Error loading STL:", error);
+                // Fallback text or keep container empty, user will see nothing if it fails roughly.
+            });
+        }
+        
+        init3D();
+
         // Gallery Generation
         const galleryGrid = $('#gallery-grid');
+        const filterContainer = $('#filter-container');
         const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZQKUeUWpxU8XNWtif8j4aEKN0InJpbxQFpK4Q4Ci5zVI1ZIlUlKTU42AomgXFPfa73Rb0w1CT1mU-/pub?output=csv';
+        
+        let allProducts = []; // Store all fetched products logic
+        let currentCategory = 'all';
 
         // Fallback data in case of error or empty sheet
         const fallbackProducts = [
-          { name: "Figura Anime", price: "$450", color: "#2563EB", quantity: 5, image: "public/images/anime-figure.png" },
-          { name: "Maceta Geométrica", price: "$120", color: "#F59E0B", quantity: 10, image: "public/images/planter.png" },
-          { name: "Soporte Audífonos", price: "$250", color: "#1E40AF", quantity: 0, image: "public/images/headphone-stand.png" }
+          { name: "Figura Anime", price: "$450", color: "#2563EB", quantity: 5, image: "public/images/anime-figure.png", category: "Figuras" },
+          { name: "Maceta Geométrica", price: "$120", color: "#F59E0B", quantity: 10, image: "public/images/planter.png", category: "Decoración" },
+          { name: "Soporte Audífonos", price: "$250", color: "#1E40AF", quantity: 0, image: "public/images/headphone-stand.png", category: "Accesorios" }
         ];
 
         async function fetchProducts() {
@@ -275,14 +422,50 @@
                 const products = parseCSV(data);
                 
                 if (products.length > 0) {
-                    renderGallery(products);
+                    allProducts = products;
                 } else {
-                    renderGallery(fallbackProducts);
+                    allProducts = fallbackProducts;
                 }
             } catch (error) {
                 console.error("Error cargando productos:", error);
-                renderGallery(fallbackProducts);
+                allProducts = fallbackProducts;
             }
+            
+            initGallery();
+        }
+
+        function initGallery() {
+            renderFilters(allProducts);
+            renderGallery(allProducts);
+        }
+
+        function renderFilters(products) {
+            // Get unique categories and remove empty ones / undefined
+            const categories = ['Todos', ...new Set(products.map(p => p.category).filter(c => c))];
+            
+            filterContainer.empty();
+            
+            categories.forEach(cat => {
+                const isActive = (cat === 'Todos' && currentCategory === 'all') || cat === currentCategory;
+                const baseClasses = "px-6 py-2 rounded-full font-bold text-sm tracking-wide transition-all duration-300 transform hover:scale-105 border-2 cursor-pointer";
+                const activeClasses = "bg-brand-orange text-white border-brand-orange shadow-lg shadow-orange-500/30";
+                const inactiveClasses = "bg-transparent text-gray-300 border-gray-600 hover:border-gray-400 hover:text-white";
+                
+                const btn = $(`<button class="${baseClasses} ${isActive ? activeClasses : inactiveClasses}">${cat}</button>`);
+                
+                btn.on('click', () => {
+                   currentCategory = cat === 'Todos' ? 'all' : cat;
+                   // Re-render filters to update active state
+                   renderFilters(products);
+                   // Filter products
+                   const filtered = currentCategory === 'all' 
+                       ? products 
+                       : products.filter(p => p.category === currentCategory);
+                   renderGallery(filtered);
+                });
+                
+                filterContainer.append(btn);
+            });
         }
 
         function getGoogleDriveImage(url) {
@@ -338,6 +521,13 @@
                 const rawImage = product['photo'] || product['foto'] || product['imagen'] || product['image'] || '';
                 product.image = getGoogleDriveImage(rawImage);
                 
+                // Handle category. Default to 'Otros' if missing? Or just skip? Let's keep empty if missing.
+                product.category = product['category'] || product['categoria'] || product['cat'] || 'Varios';
+                // Capitalize first letter of category for consistency
+                if (product.category) {
+                    product.category = product.category.charAt(0).toUpperCase() + product.category.slice(1).toLowerCase(); 
+                }
+
                 products.push(product);
             }
             return products;
