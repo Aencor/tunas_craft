@@ -287,14 +287,24 @@
 
         function getGoogleDriveImage(url) {
             if (!url) return '';
-            // Check if it's a Google Drive share link
-            const driveRegex = /\/d\/([a-zA-Z0-9_-]+)/;
+            
+            console.log("Processing image URL:", url); // Debug
+
+            // Regex for various Drive link formats
+            // Matches: /d/ID, id=ID, open?id=ID
+            const driveRegex = /(?:\/d\/|id=)([a-zA-Z0-9_-]+)/;
             const match = url.match(driveRegex);
             
             if (match && match[1]) {
-                return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+                const id = match[1];
+                // Using a more reliable direct link format for <img> tags
+                // Note: 'uc?export=view' is standard, but sometimes 'uc?export=download' works better if view fails due to mime types, though view is usually correct for images.
+                // Let's try to stick with export=view but ensure the ID is clean.
+                console.log("  -> Extracted Drive ID:", id);
+                return `https://drive.google.com/thumbnail?id=${id}&sz=w800`; 
+                // Using 'thumbnail' endpoint with size 'w800' often works better than 'uc?export=view' for embedding images without auth issues or redirect loops.
             }
-            // If it's already a direct link or another host, return as is
+            
             return url;
         }
 
@@ -382,17 +392,35 @@
 
         // WhatsApp Form Handler
         $('#whatsapp-form').on('submit', function(e) {
-          e.preventDefault();
-          
-          const name = $('#name').val();
-          const email = $('#email').val();
-          const message = $('#message').val();
-          
-          const text = `Hola Tuna's Craft! 👋\n\nMi nombre es *${name}* (${email}).\n\nMe interesa el siguiente servicio/proyecto:\n${message}`;
-          const encodedText = encodeURIComponent(text);
-          const waUrl = `https://wa.me/?text=${encodedText}`;
-          
-          window.open(waUrl, '_blank');
+            e.preventDefault();
+            const name = $('#name').val();
+            const email = $('#email').val();
+            const message = $('#message').val();
+            
+            const fullMessage = `Hola Tuna's Craft! 👋\n\nMi nombre es *${name}* (${email}).\n\nMe interesa el siguiente servicio/proyecto:\n${message}`;
+            const phone = '525619956812'; // Updated number
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(fullMessage)}`;
+            window.open(url, '_blank');
+        });
+
+        // Contact Button Handler
+        function openWhatsApp(productName) {
+            const message = productName 
+                ? `Hola, me interesa el producto: ${productName}. ¿Está disponible?`
+                : "Hola, me gustaría cotizar una impresión 3D.";
+            const phone = '525619956812'; // Updated number
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+
+        // Add smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
         });
 
       });
