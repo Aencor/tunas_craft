@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="es" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="public/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tuna's Craft | Impresión 3D a Medida</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Tailwind Config -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                blue: '#2563EB', 
+                dark: '#0F172A',
+                orange: '#F59E0B', 
+                light: '#F8FAFC', 
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              display: ['Outfit', 'sans-serif'],
+            }
+          },
+        },
+        plugins: [],
+      }
+    </script>
+    
+    <!-- Custom CSS for Animations -->
+    <style>
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
+      .animate-float {
+        animation: float 4s ease-in-out infinite;
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+    </style>
+  </head>
+  <body class="bg-brand-dark text-brand-light font-sans antialiased selection:bg-brand-orange selection:text-white">
+    
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 transition-all duration-300 bg-brand-dark/90 backdrop-blur-md border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-20">
+          <div class="flex-shrink-0 flex items-center gap-3">
+             <img class="h-12 w-auto" src="public/logo.png" alt="Tuna's Craft">
+             <span class="font-display font-bold text-2xl tracking-tight text-white">Tuna's Craft</span>
+          </div>
+          <div class="hidden md:flex space-x-8 items-center">
+            <a href="#services" class="text-gray-300 hover:text-brand-orange transition-colors font-medium">Servicios</a>
+            <a href="#delivery" class="text-gray-300 hover:text-brand-orange transition-colors font-medium">Entregas</a>
+            <a href="#gallery" class="text-gray-300 hover:text-brand-orange transition-colors font-medium">Galería</a>
+            <a href="#contact" class="bg-brand-blue hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-bold shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5">
+              Cotizar Ahora
+            </a>
+          </div>
+          <div class="md:hidden flex items-center">
+            <button id="mobile-menu-btn" class="text-gray-300 hover:text-white p-2">
+              <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="mobile-menu" class="hidden md:hidden bg-brand-dark border-t border-white/10 absolute w-full">
+        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 flex flex-col items-center">
+            <a href="#services" class="text-gray-300 hover:text-brand-orange block px-3 py-2 rounded-md text-base font-medium">Servicios</a>
+            <a href="#delivery" class="text-gray-300 hover:text-brand-orange block px-3 py-2 rounded-md text-base font-medium">Entregas</a>
+            <a href="#gallery" class="text-gray-300 hover:text-brand-orange block px-3 py-2 rounded-md text-base font-medium">Galería</a>
+             <a href="#contact" class="text-brand-blue font-bold block px-3 py-2 rounded-md text-base">Cotizar</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+      <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+        <div class="absolute top-1/4 -left-20 w-96 h-96 bg-brand-blue/20 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute bottom-1/4 -right-20 w-96 h-96 bg-brand-orange/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12">
+        <div class="flex-1 text-center md:text-left z-10">
+          <h1 class="font-display text-5xl md:text-7xl font-extrabold leading-tight mb-6">
+            Tus ideas, impresas en <br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-orange">3D Realidad</span>
+          </h1>
+          <p class="text-xl text-gray-400 mb-8 max-w-2xl mx-auto md:mx-0">
+            Creamos figuras, adornos y piezas personalizadas con la mejor calidad. 
+            ¡Si lo imaginas, lo podemos imprimir!
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+            <a href="#contact" class="bg-brand-blue hover:bg-blue-600 text-white text-lg px-8 py-4 rounded-xl font-bold shadow-xl shadow-blue-500/20 transition-all hover:-translate-y-1">
+              Hacer un Pedido
+            </a>
+            <a href="#gallery" class="glass hover:bg-white/10 text-white text-lg px-8 py-4 rounded-xl font-semibold transition-all">
+              Ver Catálogo
+            </a>
+          </div>
+        </div>
+        <div class="flex-1 relative z-10 animate-float">
+          <div class="relative w-80 h-80 md:w-[500px] md:h-[500px] mx-auto">
+             <img src="public/logo.png" alt="3D Printing Illustration" class="w-full h-full object-contain filter drop-shadow-2xl">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Services -->
+    <section id="services" class="py-24 bg-brand-dark/50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="font-display text-4xl font-bold mb-4">Nuestros <span class="text-brand-blue">Servicios</span></h2>
+          <p class="text-gray-400 max-w-2xl mx-auto">Calidad premium en cada capa.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="group glass p-8 rounded-2xl hover:bg-white/5 transition-all cursor-default">
+            <div class="w-14 h-14 bg-brand-blue/20 rounded-xl flex items-center justify-center mb-6 text-3xl group-hover:scale-110 transition-transform">📏</div>
+            <h3 class="font-display text-2xl font-bold mb-3">Impresión a Medida</h3>
+            <p class="text-gray-400 leading-relaxed">Prototipos, refacciones y piezas técnicas diseñadas específicamente para tus necesidades.</p>
+          </div>
+          <div class="group glass p-8 rounded-2xl hover:bg-white/5 transition-all cursor-default">
+            <div class="w-14 h-14 bg-brand-orange/20 rounded-xl flex items-center justify-center mb-6 text-3xl group-hover:scale-110 transition-transform">🎨</div>
+            <h3 class="font-display text-2xl font-bold mb-3">Figuras y Arte</h3>
+            <p class="text-gray-400 leading-relaxed">Coleccionables de anime, videojuegos y miniaturas de alta resolución para pintar.</p>
+          </div>
+          <div class="group glass p-8 rounded-2xl hover:bg-white/5 transition-all cursor-default">
+            <div class="w-14 h-14 bg-purple-500/20 rounded-xl flex items-center justify-center mb-6 text-3xl group-hover:scale-110 transition-transform">🏠</div>
+            <h3 class="font-display text-2xl font-bold mb-3">Decoración</h3>
+            <p class="text-gray-400 leading-relaxed">Macetas, lámparas, litofanías y regalos únicos para darle vida a tus espacios.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Delivery & Payments -->
+    <section id="delivery" class="py-24 relative overflow-hidden">
+      <div class="absolute inset-0 bg-brand-blue/5 skew-y-3 transform origin-top-left scale-110"></div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="bg-brand-dark border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl flex flex-col md:flex-row gap-12 items-center">
+          <div class="flex-1">
+            <h2 class="font-display text-3xl md:text-4xl font-bold mb-8">Información de <span class="text-brand-orange">Entregas</span></h2>
+            <ul class="space-y-6">
+              <li class="flex items-start gap-4">
+                <div class="bg-brand-blue p-3 rounded-full text-white shrink-0 mt-1">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+                <div>
+                  <h4 class="text-xl font-bold text-white">Punto de Entrega Principal</h4>
+                  <p class="text-gray-400">Metro Chabacano, CDMX</p>
+                  <p class="text-sm text-brand-blue font-semibold mt-1">Sábados: 11:00 am - 3:00 pm</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-4">
+                 <div class="bg-gray-700 p-3 rounded-full text-white shrink-0 mt-1">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <div>
+                  <h4 class="text-xl font-bold text-white">Entregas Urgentes / Entre Semana</h4>
+                  <p class="text-gray-400">Punto a convenir (Con costo extra)</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="flex-1 w-full bg-black/20 rounded-2xl p-8 border border-white/5">
+            <h3 class="text-2xl font-display font-bold mb-6 text-center">Métodos de Pago</h3>
+            <div class="grid grid-cols-2 gap-4 mb-8">
+               <div class="bg-brand-dark p-4 rounded-xl text-center border border-white/10 hover:border-brand-blue transition-colors">💳 Tarjeta / MSI</div>
+               <div class="bg-brand-dark p-4 rounded-xl text-center border border-white/10 hover:border-brand-blue transition-colors">💸 Transferencia</div>
+               <div class="bg-brand-dark p-4 rounded-xl text-center border border-white/10 hover:border-brand-blue transition-colors">💵 Efectivo</div>
+               <div class="bg-brand-dark p-4 rounded-xl text-center border border-white/10 hover:border-brand-blue transition-colors">🎫 Vales</div>
+            </div>
+            <div class="flex justify-center">
+               <div class="bg-white py-3 px-6 rounded-lg">
+                  <svg width="100" height="26" viewBox="0 0 100 26" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M13.8824 3.744L14.4756 0H9.5544L8.9616 3.744H7.1352L7.728 0H2.8068L2.214 3.744H0L1.764 7.644H12.1152L13.8824 3.744ZM8.8248 10.944H13.7472C14.0748 10.944 14.3628 11.232 14.3628 11.556V11.844C14.3628 12.168 14.0748 12.456 13.7472 12.456H8.8248C8.4972 12.456 8.2092 12.168 8.2092 11.844V11.556C8.2092 11.232 8.4972 10.944 8.8248 10.944ZM8.8248 14.844H13.7472C14.0748 14.844 14.3628 15.132 14.3628 15.456V15.744C14.3628 16.068 14.0748 16.356 13.7472 16.356H8.8248C8.4972 16.356 8.2092 16.068 8.2092 15.744V15.456C8.2092 15.132 8.4972 14.844 8.8248 14.844ZM2.0724 10.944H6.9948C7.3224 10.944 7.6104 11.232 7.6104 11.556V11.844C7.6104 12.168 7.3224 12.456 6.9948 12.456H2.0724C1.7448 12.456 1.4568 12.168 1.4568 11.844V11.556C1.4568 11.232 1.7448 10.944 2.0724 10.944ZM2.0724 14.844H6.9948C7.3224 14.844 7.6104 15.132 7.6104 15.456V15.744C7.6104 16.068 7.3224 16.356 6.9948 16.356H2.0724C1.7448 16.356 1.4568 16.068 1.4568 15.744V15.456C1.4568 15.132 1.7448 14.844 2.0724 14.844ZM17.9 10.944H22.8224C23.15 10.944 23.438 11.232 23.438 11.556V11.844C23.438 12.168 23.15 12.456 22.8224 12.456H17.9C17.5724 12.456 17.2844 12.168 17.2844 11.844V11.556C17.2844 11.232 17.5724 10.944 17.9 10.944ZM17.9 14.844H22.8224C23.15 14.844 23.438 15.132 23.438 15.456V15.744C23.438 16.068 23.15 16.356 22.8224 16.356H17.9C17.5724 16.356 17.2844 16.068 17.2844 15.744V15.456C17.2844 15.132 17.5724 14.844 17.9 14.844ZM26.9748 10.944H31.8972C32.2248 10.944 32.5128 11.232 32.5128 11.556V11.844C32.5128 12.168 32.2248 12.456 31.8972 12.456H26.9748C26.6472 12.456 26.3592 12.168 26.3592 11.844V11.556C26.3592 11.232 26.6472 10.944 26.9748 10.944ZM26.9748 14.844H31.8972C32.2248 14.844 32.5128 15.132 32.5128 15.456V15.744C32.5128 16.068 32.2248 16.356 31.8972 16.356H26.9748C26.6472 16.356 26.3592 16.068 26.3592 15.744V15.456C26.3592 15.132 26.6472 14.844 26.9748 14.844ZM24.4 7.644L22.636 3.744H24.364L25.3 5.868L26.236 3.744H27.964L26.2 7.644H24.4ZM15.3 7.644L17.064 3.744H22.0152L22.608 0H20.7816L20.1888 3.744H15.8916L16.4844 0H14.658L14.0652 3.744H12.9132L11.1492 7.644H15.3Z" fill="#009EE3"/>
+                  </svg>
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gallery -->
+    <section id="gallery" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="font-display text-4xl font-bold mb-12 text-center text-white">Galería de <span class="text-brand-orange">Trabajos</span></h2>
+      <div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="py-24 bg-gradient-to-b from-brand-dark to-brand-blue/10">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-brand-dark border border-white/10 p-10 rounded-3xl shadow-2xl">
+          <h2 class="font-display text-4xl font-bold mb-6 text-center">Cotiza tu <span class="text-brand-blue">Proyecto</span></h2>
+          <p class="text-center text-gray-400 mb-8">Llena el formulario y te escribiremos directamente por WhatsApp.</p>
+          <form id="whatsapp-form" class="space-y-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Nombre</label>
+              <input type="text" id="name" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-blue transition-all" placeholder="Tu nombre">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Correo Electrónico</label>
+              <input type="email" id="email" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-blue transition-all" placeholder="tucorreo@ejemplo.com">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Mensaje / Idea</label>
+              <textarea id="message" rows="4" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-blue transition-all" placeholder="Cuéntanos qué quieres imprimir..."></textarea>
+            </div>
+            <button type="submit" class="w-full bg-brand-blue hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-1 flex justify-center items-center gap-2">
+              <span>Enviar WhatsApp</span>
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-black py-12 border-t border-white/10">
+      <div class="max-w-7xl mx-auto px-4 text-center">
+        <div class="flex justify-center gap-8 mb-8">
+           <a href="https://www.facebook.com/tunascraft3d" target="_blank" class="text-gray-400 hover:text-white transition-colors">Facebook</a>
+           <a href="https://www.instagram.com/tunas_craft" target="_blank" class="text-gray-400 hover:text-white transition-colors">Instagram</a>
+        </div>
+        <p class="text-gray-500">&copy; 2024 Tuna's Craft. Hecho con 💙 y 🟠.</p>
+      </div>
+    </footer>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    
+    <!-- Application Logic -->
+    <script>
+      $(document).ready(function() {
+        
+        // Mobile Menu Toggle
+        $('#mobile-menu-btn').click(function() {
+          $('#mobile-menu').slideToggle();
+        });
+
+        // Gallery Generation
+        const galleryGrid = $('#gallery-grid');
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZQKUeUWpxU8XNWtif8j4aEKN0InJpbxQFpK4Q4Ci5zVI1ZIlUlKTU42AomgXFPfa73Rb0w1CT1mU-/pub?output=csv';
+
+        // Fallback data in case of error or empty sheet
+        const fallbackProducts = [
+          { name: "Figura Anime", price: "$450", color: "#2563EB", quantity: 5, image: "public/images/anime-figure.png" },
+          { name: "Maceta Geométrica", price: "$120", color: "#F59E0B", quantity: 10, image: "public/images/planter.png" },
+          { name: "Soporte Audífonos", price: "$250", color: "#1E40AF", quantity: 0, image: "public/images/headphone-stand.png" }
+        ];
+
+        async function fetchProducts() {
+            try {
+                const response = await fetch(SHEET_URL);
+                const data = await response.text();
+                const products = parseCSV(data);
+                
+                if (products.length > 0) {
+                    renderGallery(products);
+                } else {
+                    renderGallery(fallbackProducts);
+                }
+            } catch (error) {
+                console.error("Error cargando productos:", error);
+                renderGallery(fallbackProducts);
+            }
+        }
+
+        function getGoogleDriveImage(url) {
+            if (!url) return '';
+            // Check if it's a Google Drive share link
+            const driveRegex = /\/d\/([a-zA-Z0-9_-]+)/;
+            const match = url.match(driveRegex);
+            
+            if (match && match[1]) {
+                return `https://drive.google.com/uc?export=view&id=${match[1]}`;
+            }
+            // If it's already a direct link or another host, return as is
+            return url;
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n');
+            const products = [];
+            
+            // Handle headers, normalizing to lowercase and trimming
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            
+            for (let i = 1; i < lines.length; i++) {
+                // Handle potential loose commas in CSV basic parsing (simple split)
+                const currentLine = lines[i].split(',');
+                if (currentLine.length < headers.length) continue;
+
+                const product = {};
+                for (let j = 0; j < headers.length; j++) {
+                    let value = currentLine[j] ? currentLine[j].trim() : '';
+                    product[headers[j]] = value;
+                }
+                
+                // Normalizing keys to english if needed or just ensuring we have 'quantity'
+                // Mapping typical Spanish headers if they appear
+                if (product['cantidad']) product.quantity = product['cantidad'];
+                 // Handle 'quantity' if it's in English or just passed through
+                
+                if (product['precio']) product.price = product['precio'];
+                if (product['nombre']) product.name = product['nombre'];
+                
+                // Handle image from 'photo', 'foto', or 'imagen'
+                const rawImage = product['photo'] || product['foto'] || product['imagen'] || product['image'] || '';
+                product.image = getGoogleDriveImage(rawImage);
+                
+                products.push(product);
+            }
+            return products;
+        }
+
+        function renderGallery(products) {
+            galleryGrid.empty();
+            
+            products.forEach((product) => {
+                const quantity = parseInt(product.quantity || 0);
+                const isAvailable = quantity > 0;
+                
+                const badgeClass = isAvailable 
+                    ? "bg-green-500 text-white" 
+                    : "bg-gray-500 text-white";
+                const badgeText = isAvailable ? "Disponible" : "Agotado";
+
+                // Use image if available and not empty, otherwise fallback to color gradient
+                const color = product.color || "#2563EB"; 
+                
+                const backgroundStyle = product.image && product.image.trim() !== ""
+                    ? `background-image: url('${product.image}'); background-size: cover; background-position: center;` 
+                    : `background: linear-gradient(135deg, ${color} 40%, transparent);`;
+                
+                const bgClass = product.image && product.image.trim() !== ""
+                    ? "group-hover:scale-110 transition-transform duration-500" 
+                    : "opacity-80 group-hover:opacity-100 transition-opacity";
+
+                const item = `
+                  <div class="group relative overflow-hidden rounded-2xl shadow-lg aspect-square bg-gray-900 cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02]">
+                    <div style="width: 100%; height: 100%; ${backgroundStyle}" class="${bgClass}"></div>
+                    
+                    <div class="absolute top-4 right-4 flex flex-col items-end gap-2 z-10">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${badgeClass}">
+                            ${badgeText}
+                        </span>
+                        ${isAvailable ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-black/50 text-white backdrop-blur-sm border border-white/20">${quantity} disp.</span>` : ''}
+                    </div>
+
+                    <div class="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+                      <h3 class="text-white font-bold text-lg drop-shadow-md leading-tight">${product.name}</h3>
+                      <p class="text-brand-orange font-bold text-xl mt-1">${product.price}</p>
+                    </div>
+                  </div>
+                `;
+                galleryGrid.append(item);
+            });
+        }
+
+        // Init
+        fetchProducts();
+
+        // WhatsApp Form Handler
+        $('#whatsapp-form').on('submit', function(e) {
+          e.preventDefault();
+          
+          const name = $('#name').val();
+          const email = $('#email').val();
+          const message = $('#message').val();
+          
+          const text = `Hola Tuna's Craft! 👋\n\nMi nombre es *${name}* (${email}).\n\nMe interesa el siguiente servicio/proyecto:\n${message}`;
+          const encodedText = encodeURIComponent(text);
+          const waUrl = `https://wa.me/?text=${encodedText}`;
+          
+          window.open(waUrl, '_blank');
+        });
+
+      });
+    </script>
+  </body>
+</html>
