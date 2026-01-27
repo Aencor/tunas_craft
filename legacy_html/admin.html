@@ -1,0 +1,464 @@
+<!doctype html>
+<html lang="es" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard | Tuna's Craft</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                blue: '#2563EB', 
+                dark: '#0F172A',
+                orange: '#F59E0B', 
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              display: ['Outfit', 'sans-serif'],
+            }
+          },
+        },
+      }
+    </script>
+  </head>
+  <body class="bg-slate-900 text-slate-100 font-sans min-h-screen">
+
+    <!-- Sidebar / Nav -->
+    <div class="flex h-screen overflow-hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-slate-800 border-r border-slate-700 hidden md:flex flex-col">
+            <div class="p-6">
+                <h1 class="font-display font-bold text-2xl text-white">Tuna's <span class="text-brand-orange">Admin</span></h1>
+            </div>
+            <nav class="flex-1 px-4 space-y-2">
+                <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700 transition flex items-center gap-3 text-slate-300">
+                    <span>📊</span> Dashboard
+                </button>
+                <button onclick="switchTab('orders')" id="nav-orders" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700 transition flex items-center gap-3 text-slate-300">
+                    <span>📦</span> Pedidos
+                </button>
+                <button onclick="switchTab('leads')" id="nav-leads" class="nav-item w-full text-left px-4 py-3 rounded-lg hover:bg-slate-700 transition flex items-center gap-3 text-slate-300">
+                    <span>📨</span> Cotizaciones
+                </button>
+            </nav>
+            <div class="p-4 border-t border-slate-700">
+                <a href="index.html" class="block text-center text-sm text-slate-400 hover:text-white">Ir al Sitio Web</a>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 overflow-y-auto bg-slate-900 p-8">
+            <!-- Mobile Header -->
+            <div class="md:hidden flex justify-between items-center mb-8">
+                 <h1 class="font-display font-bold text-2xl text-white">Tuna's Admin</h1>
+                 <!-- Simple mobile nav for demo -->
+                 <select onchange="switchTab(this.value)" class="bg-slate-800 text-white p-2 rounded">
+                     <option value="dashboard">Dashboard</option>
+                     <option value="orders">Pedidos</option>
+                     <option value="leads">Cotizaciones</option>
+                 </select>
+            </div>
+
+            <!-- Dashboard View -->
+            <div id="view-dashboard" class="tab-content">
+                <h2 class="text-3xl font-display font-bold mb-6">Resumen</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                        <h3 class="text-slate-400 text-sm font-medium uppercase">Pedidos Activos</h3>
+                        <p class="text-4xl font-bold text-white mt-2" id="stat-active-orders">0</p>
+                    </div>
+                    <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                        <h3 class="text-slate-400 text-sm font-medium uppercase">Cotizaciones Nuevas</h3>
+                        <p class="text-4xl font-bold text-brand-orange mt-2" id="stat-new-leads">0</p>
+                    </div>
+                    <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
+                        <h3 class="text-slate-400 text-sm font-medium uppercase">Ingresos (Mes)</h3>
+                        <p class="text-4xl font-bold text-green-500 mt-2" id="stat-revenue">$0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders View -->
+            <div id="view-orders" class="tab-content hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-3xl font-display font-bold">Gestión de Pedidos</h2>
+                    <button onclick="openOrderModal()" class="bg-brand-blue hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-bold shadow-lg transition-all">
+                        + Nuevo Pedido
+                    </button>
+                </div>
+                
+                <div class="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-700/50 text-slate-300">
+                                    <th class="p-4 font-medium">ID / Fecha</th>
+                                    <th class="p-4 font-medium">Cliente</th>
+                                    <th class="p-4 font-medium">Detalles</th>
+                                    <th class="p-4 font-medium">Total / Anticipo</th>
+                                    <th class="p-4 font-medium">Estatus</th>
+                                    <th class="p-4 font-medium">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orders-table-body" class="divide-y divide-slate-700 text-sm">
+                                <!-- Orders Injected Here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="no-orders-msg" class="p-8 text-center text-slate-500 hidden">
+                        No hay pedidos registrados.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leads View -->
+            <div id="view-leads" class="tab-content hidden">
+                <h2 class="text-3xl font-display font-bold mb-6">Solicitudes de Cotización</h2>
+                <div class="grid gap-4" id="leads-container">
+                    <!-- Leads Injected Here -->
+                </div>
+                <div id="no-leads-msg" class="p-12 text-center text-slate-500 hidden border border-dashed border-slate-700 rounded-2xl">
+                    No hay cotizaciones nuevas.
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- Order Modal -->
+    <div id="order-modal" class="fixed inset-0 z-50 bg-black/80 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl border border-slate-700 shadow-2xl">
+            <div class="p-6 border-b border-slate-700 flex justify-between items-center sticky top-0 bg-slate-900 z-10">
+                <h3 class="text-xl font-bold text-white">Nuevo Pedido</h3>
+                <button onclick="closeOrderModal()" class="text-slate-400 hover:text-white">✕</button>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Client Info -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Cliente</label>
+                        <input type="text" id="order-client" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-slate-400 mb-1">Contacto</label>
+                        <input type="text" id="order-contact" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+                    </div>
+                </div>
+
+                <!-- Dates & Status -->
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                         <label class="block text-sm text-slate-400 mb-1">Fecha Entrega</label>
+                         <input type="date" id="order-deadline" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+                    </div>
+                    <div>
+                         <label class="block text-sm text-slate-400 mb-1">Estatus</label>
+                         <select id="order-status" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+                             <option value="pedido">Pedido Confirmado</option>
+                             <option value="proceso">En Proceso</option>
+                             <option value="terminado">Terminado</option>
+                             <option value="entregado">Entregado</option>
+                         </select>
+                    </div>
+                    <div>
+                         <label class="block text-sm text-slate-400 mb-1">Anticipo ($)</label>
+                         <input type="number" id="order-advance" value="0" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-white">
+                    </div>
+                </div>
+
+                <!-- Items -->
+                <div>
+                    <div class="flex justify-between items-end mb-2">
+                        <label class="block text-sm text-slate-400">Piezas</label>
+                    </div>
+                    <div id="order-items-container" class="space-y-2">
+                        <!-- Initial Row -->
+                        <div class="flex gap-2">
+                            <input type="text" placeholder="Descripción de pieza" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white item-desc">
+                            <input type="number" placeholder="Cant." value="1" class="w-20 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white item-qty">
+                            <input type="number" placeholder="Precio U." class="w-24 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white item-price">
+                        </div>
+                    </div>
+                    <button onclick="addOrderItemRow()" class="mt-2 text-sm text-brand-blue hover:text-blue-400 font-medium">+ Agregar otra pieza</button>
+                </div>
+
+                <!-- Total -->
+                <div class="flex justify-end items-center gap-4 text-xl font-bold">
+                    <span class="text-slate-400">Total:</span>
+                    <span id="order-total-display" class="text-white">$0</span>
+                </div>
+            </div>
+            <div class="p-6 border-t border-slate-700 flex justify-end gap-3 sticky bottom-0 bg-slate-900 z-10">
+                <button onclick="closeOrderModal()" class="px-4 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800">Cancelar</button>
+                <button onclick="saveOrder()" class="px-6 py-2 rounded-lg bg-brand-blue hover:bg-blue-600 text-white font-bold shadow-lg">Guardar Pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        // State
+        let orders = JSON.parse(localStorage.getItem('tunas_orders') || '[]');
+        let leads = JSON.parse(localStorage.getItem('tunas_leads') || '[]');
+        
+        // --- Navigation ---
+        function switchTab(tabId) {
+            $('.tab-content').addClass('hidden');
+            $(`#view-${tabId}`).removeClass('hidden');
+            
+            $('.nav-item').removeClass('bg-brand-blue/20 text-brand-blue border-l-4 border-brand-blue');
+            $('.nav-item').addClass('text-slate-300'); // Reset
+            
+            $(`#nav-${tabId}`).addClass('bg-slate-700/50 text-white'); // Simple active state
+            
+            renderAll();
+        }
+
+        // --- Render Functions ---
+        function renderAll() {
+            renderDashboard();
+            renderOrders();
+            renderLeads();
+        }
+
+        function renderDashboard() {
+            const activeOrders = orders.filter(o => o.status !== 'entregado').length;
+            const newLeads = leads.filter(l => l.status === 'Nuevo').length;
+            const revenue = orders.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
+            
+            $('#stat-active-orders').text(activeOrders);
+            $('#stat-new-leads').text(newLeads);
+            $('#stat-revenue').text(`$${revenue.toLocaleString()}`);
+        }
+
+        function renderOrders() {
+            const tbody = $('#orders-table-body');
+            tbody.empty();
+            
+            if (orders.length === 0) {
+                $('#no-orders-msg').removeClass('hidden');
+                return;
+            }
+            $('#no-orders-msg').addClass('hidden');
+
+            const statusColors = {
+                'pedido': 'bg-blue-500/20 text-blue-400 border-blue-500/50',
+                'proceso': 'bg-orange-500/20 text-orange-400 border-orange-500/50',
+                'terminado': 'bg-purple-500/20 text-purple-400 border-purple-500/50',
+                'entregado': 'bg-green-500/20 text-green-400 border-green-500/50'
+            };
+
+            orders.forEach(order => {
+                const badgeClass = statusColors[order.status] || 'bg-gray-500/20 text-gray-400';
+                
+                // Items summary
+                const itemsStr = order.items.map(i => `${i.qty}x ${i.desc}`).join(', ');
+                
+                const deleteBtn = `<button onclick="deleteOrder('${order.id}')" class="text-red-400 hover:text-red-300 p-1" title="Borrar">🗑</button>`;
+                
+                // Status Dropdown (Mini)
+                const statusSelect = `
+                    <select onchange="updateOrderStatus('${order.id}', this.value)" class="bg-slate-900 border border-slate-600 rounded text-xs p-1 text-white">
+                        <option value="pedido" ${order.status === 'pedido' ? 'selected' : ''}>Pedido</option>
+                        <option value="proceso" ${order.status === 'proceso' ? 'selected' : ''}>Proceso</option>
+                        <option value="terminado" ${order.status === 'terminado' ? 'selected' : ''}>Terminado</option>
+                        <option value="entregado" ${order.status === 'entregado' ? 'selected' : ''}>Entregado</option>
+                    </select>
+                `;
+
+                const row = `
+                    <tr class="hover:bg-slate-800/50 transition-colors group">
+                        <td class="p-4">
+                            <div class="font-mono text-xs text-slate-500">ID: ${order.id.slice(-4)}</div>
+                            <div class="text-xs text-slate-400">${order.date}</div>
+                        </td>
+                        <td class="p-4">
+                            <div class="font-bold text-white">${order.client}</div>
+                            <div class="text-xs text-slate-400">${order.contact}</div>
+                        </td>
+                        <td class="p-4 max-w-xs truncate text-slate-300" title="${itemsStr}">
+                            ${itemsStr}
+                        </td>
+                        <td class="p-4">
+                            <div class="font-bold text-brand-orange">$${order.total}</div>
+                            ${order.advance > 0 ? `<div class="text-xs text-green-400">Anticipo: $${order.advance}</div>` : ''}
+                        </td>
+                        <td class="p-4">
+                            ${statusSelect}
+                        </td>
+                        <td class="p-4">
+                            ${deleteBtn}
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        }
+
+        function renderLeads() {
+            const container = $('#leads-container');
+            container.empty();
+            
+            if (leads.length === 0) {
+                $('#no-leads-msg').removeClass('hidden');
+                return;
+            }
+            $('#no-leads-msg').addClass('hidden');
+            
+            leads.forEach(lead => {
+                const card = `
+                    <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-start gap-4">
+                        <div class="flex-1">
+                            <div class="flex justify-between items-center mb-2">
+                                <h3 class="font-bold text-lg text-white">${lead.name}</h3>
+                                <span class="text-xs text-slate-500 font-mono">${lead.date}</span>
+                            </div>
+                            <div class="text-sm text-slate-300 space-y-1">
+                                <p><strong>Contacto:</strong> ${lead.phone} | ${lead.email}</p>
+                                <p><strong>Piezas:</strong> ${lead.quantity} (${lead.material}, ${lead.quality})</p>
+                                <p class="bg-slate-900 p-2 rounded text-slate-400 mt-2">${lead.details || 'Sin detalles'}</p>
+                                ${lead.refLink ? `<a href="${lead.refLink}" target="_blank" class="text-brand-blue hover:underline text-xs flex mt-1 items-center gap-1">🔗 Ver Referencia</a>` : ''}
+                            </div>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <button onclick="convertToOrder('${lead.id}')" class="bg-slate-700 hover:bg-slate-600 text-white text-xs px-3 py-2 rounded-lg transition-colors whitespace-nowrap">
+                                + Crear Pedido
+                            </button>
+                            <button onclick="deleteLead('${lead.id}')" class="text-red-400 text-xs px-3 py-2 hover:bg-red-500/10 rounded-lg transition-colors">
+                                Borrar
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.append(card);
+            });
+        }
+
+        // --- Order Logic ---
+        function openOrderModal() {
+            $('#order-modal').removeClass('hidden');
+            // Reset fields
+            $('#order-client').val('');
+            $('#order-contact').val('');
+            $('#order-total-display').text('$0');
+            $('#order-advance').val(0);
+            $('#order-items-container').html(`
+                <div class="flex gap-2 item-row">
+                    <input type="text" placeholder="Descripción de pieza" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white item-desc">
+                    <input type="number" placeholder="Cant." value="1" class="w-20 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white item-qty" onchange="calcTotal()">
+                    <input type="number" placeholder="Precio U." class="w-24 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white item-price" onchange="calcTotal()">
+                </div>
+            `);
+        }
+
+        function closeOrderModal() {
+            $('#order-modal').addClass('hidden');
+        }
+
+        function addOrderItemRow() {
+            $('#order-items-container').append(`
+                <div class="flex gap-2 item-row mt-2">
+                    <input type="text" placeholder="Descripción de pieza" class="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white item-desc">
+                    <input type="number" placeholder="Cant." value="1" class="w-20 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white item-qty" onchange="calcTotal()">
+                    <input type="number" placeholder="Precio U." class="w-24 bg-slate-800 border border-slate-700 rounded-lg p-2 text-white item-price" onchange="calcTotal()">
+                </div>
+            `);
+        }
+
+        function calcTotal() {
+            let total = 0;
+            $('.item-row').each(function() {
+                const qty = parseFloat($(this).find('.item-qty').val()) || 0;
+                const price = parseFloat($(this).find('.item-price').val()) || 0;
+                total += qty * price;
+            });
+            $('#order-total-display').text(`$${total.toLocaleString()}`);
+            return total;
+        }
+
+        function saveOrder() {
+            const client = $('#order-client').val();
+            if(!client) return alert('El nombre del cliente es requerido');
+
+            const items = [];
+            $('.item-row').each(function() {
+                items.push({
+                    desc: $(this).find('.item-desc').val(),
+                    qty: $(this).find('.item-qty').val(),
+                    price: $(this).find('.item-price').val()
+                });
+            });
+
+            const newOrder = {
+                id: Date.now().toString(),
+                date: new Date().toLocaleDateString('es-MX'),
+                client,
+                contact: $('#order-contact').val(),
+                deadline: $('#order-deadline').val(),
+                status: $('#order-status').val(),
+                advance: $('#order-advance').val(),
+                items,
+                total: calcTotal()
+            };
+
+            orders.unshift(newOrder);
+            localStorage.setItem('tunas_orders', JSON.stringify(orders));
+            closeOrderModal();
+            renderAll();
+        }
+
+        function updateOrderStatus(id, newStatus) {
+            const order = orders.find(o => o.id === id);
+            if(order) {
+                order.status = newStatus;
+                localStorage.setItem('tunas_orders', JSON.stringify(orders));
+                renderAll();
+            }
+        }
+        
+        function deleteOrder(id) {
+            if(confirm('¿Seguro de borrar este pedido?')) {
+                orders = orders.filter(o => o.id !== id);
+                localStorage.setItem('tunas_orders', JSON.stringify(orders));
+                renderAll();
+            }
+        }
+
+        // --- Lead Logic ---
+        function deleteLead(id) {
+            if(confirm('¿Borrar esta cotización?')) {
+                leads = leads.filter(l => l.id !== id);
+                localStorage.setItem('tunas_leads', JSON.stringify(leads));
+                renderAll();
+            }
+        }
+
+        function convertToOrder(leadId) {
+            const lead = leads.find(l => l.id === leadId);
+            if(!lead) return;
+
+            openOrderModal();
+            $('#order-client').val(lead.name);
+            $('#order-contact').val(`${lead.phone} - ${lead.email}`);
+            
+            // Pre-fill first item with description
+            const firstRow = $('.item-row').first();
+            firstRow.find('.item-desc').val(lead.details || 'Impresión 3D');
+            firstRow.find('.item-qty').val(lead.quantity);
+        }
+
+        // Init
+        switchTab('dashboard'); // Default tab
+
+        // Delegate change events for dynamic rows
+        $(document).on('input', '.item-qty, .item-price', calcTotal);
+
+    </script>
+  </body>
+</html>

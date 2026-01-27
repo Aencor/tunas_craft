@@ -1,0 +1,324 @@
+{
+  "clients": [
+    {
+      "name": "Rocio Rodríguez",
+      "type": "mayorista",
+      "email": "rocio@gmail.com",
+      "phone": "",
+      "facebook": "",
+      "instagram": "",
+      "address": ", Col. , , ",
+      "street": "",
+      "colony": "",
+      "zip": "",
+      "state": "",
+      "id": "1769551726834",
+      "joinedAt": "2026-01-27T22:08:46.834Z"
+    },
+    {
+      "name": "Test",
+      "email": "test@accelity.com",
+      "phone": "",
+      "type": "normal",
+      "address": "En Tienda, Col. , , ",
+      "street": "En Tienda",
+      "colony": "",
+      "zip": "",
+      "state": "",
+      "id": "1769551647042",
+      "joinedAt": "2026-01-27T22:07:27.042Z",
+      "facebook": "",
+      "instagram": ""
+    },
+    {
+      "name": "Social Client",
+      "type": "normal",
+      "email": "social@test.com",
+      "phone": "1234567890",
+      "facebook": "fb_handle",
+      "instagram": "ig_handle",
+      "address": ", Col. , , ",
+      "street": "",
+      "colony": "",
+      "zip": "",
+      "state": "",
+      "id": "1769549290997",
+      "joinedAt": "2026-01-27T21:28:10.997Z"
+    },
+    {
+      "name": "Search Test User",
+      "type": "normal",
+      "email": "search_test@example.com",
+      "phone": "1234567890",
+      "address": "Test St 123, Col. Test Col, 12345, Test State",
+      "street": "Test St 123",
+      "colony": "Test Col",
+      "zip": "12345",
+      "state": "Test State",
+      "id": "1769545736259",
+      "joinedAt": "2026-01-27T20:28:56.259Z"
+    },
+    {
+      "name": "Karitina",
+      "email": "katrina@gmail.com",
+      "phone": "5619956812",
+      "type": "normal",
+      "address": ", Col. , , ",
+      "street": "",
+      "colony": "",
+      "zip": "",
+      "state": "",
+      "id": "1769545502013",
+      "joinedAt": "2026-01-27T20:25:02.013Z"
+    }
+  ],
+  "orders": [
+    {
+      "clientId": "1769554731266",
+      "items": [
+        {
+          "desc": "Dice Tower",
+          "qty": 1,
+          "price": "500.00"
+        }
+      ],
+      "total": "500.00",
+      "advance": "500.00",
+      "deliveryLocation": "Entregado en Tienda",
+      "status": "entregado",
+      "date": "27/1/2026",
+      "id": "1769554731271",
+      "remaining": "0.00"
+    },
+    {
+      "clientId": "1769551726834",
+      "items": [
+        {
+          "desc": "Test Productos",
+          "qty": 1,
+          "price": "100.00"
+        }
+      ],
+      "total": "90.00",
+      "advance": "0.00",
+      "deliveryLocation": ", Col. , , ",
+      "status": "pedido",
+      "date": "27/1/2026",
+      "id": "1769551744908",
+      "remaining": "90.00"
+    },
+    {
+      "clientId": "1769551647042",
+      "items": [
+        {
+          "desc": "asda",
+          "qty": 1,
+          "price": "1.00"
+        }
+      ],
+      "total": "1.00",
+      "advance": "0.00",
+      "deliveryLocation": "En Tienda",
+      "status": "pedido",
+      "date": "27/1/2026",
+      "id": "1769551662084",
+      "remaining": "1.00"
+    },
+    {
+      "clientId": "1769551647042",
+      "items": [
+        {
+          "desc": "Test",
+          "qty": 1,
+          "price": "100.00"
+        }
+      ],
+      "total": "100.00",
+      "advance": "100.00",
+      "deliveryLocation": "Entregado en Tienda",
+      "status": "entregado",
+      "date": "27/1/2026",
+      "id": "1769551647044",
+      "remaining": "0.00"
+    },
+    {
+      "clientId": "1769545502013",
+      "items": [
+        {
+          "desc": "Test",
+          "qty": 1,
+          "price": "100.00"
+        }
+      ],
+      "total": "100.00",
+      "advance": "0.00",
+      "deliveryLocation": "Test",
+      "status": "entregado",
+      "date": "27/1/2026",
+      "id": "1769549115439",
+      "remaining": "100.00"
+    },
+    {
+      "clientId": "1769548936054",
+      "items": [
+        {
+          "desc": "",
+          "qty": 1,
+          "price": "NaN"
+        }
+      ],
+      "total": "0.00",
+      "advance": "0.00",
+      "deliveryLocation": "Entregado en Tienda",
+      "status": "entregado",
+      "date": "27/1/2026",
+      "id": "1769548936055",
+      "remaining": "0.00"
+    },
+    {
+      "clientId": "1769545736259",
+      "items": [
+        {
+          "desc": "Counter Order 1",
+          "qty": 1,
+          "price": "50.00"
+        }
+      ],
+      "total": "50.00",
+      "advance": "50.00",
+      "deliveryLocation": "Entregado en Tienda",
+      "status": "entregado",
+      "date": "27/1/2026",
+      "id": "1769548889515",
+      "remaining": "0.00"
+    },
+    {
+      "clientId": "",
+      "items": [
+        {
+          "desc": "Test Order 1",
+          "qty": 1,
+          "price": "125.00"
+        }
+      ],
+      "total": "125.00",
+      "advance": "0.00",
+      "deliveryLocation": "Test Address 123",
+      "status": "pedido",
+      "date": "27/1/2026",
+      "id": "1769548602353",
+      "remaining": "125.00"
+    },
+    {
+      "clientId": "1769545502013",
+      "items": [
+        {
+          "desc": "Test",
+          "qty": 1,
+          "price": "100.00"
+        }
+      ],
+      "total": "100.00",
+      "advance": "0.00",
+      "deliveryLocation": "N/A",
+      "status": "pedido",
+      "date": "27/1/2026",
+      "id": "1769545570006",
+      "remaining": "100.00"
+    },
+    {
+      "clientId": "1769545502013",
+      "items": [
+        {
+          "desc": "Sombreros de Brujita",
+          "qty": "10",
+          "price": "70.00"
+        }
+      ],
+      "total": "700.00",
+      "advance": "500.00",
+      "deliveryLocation": "En chabacano",
+      "status": "pedido",
+      "date": "27/1/2026",
+      "id": "1769545502018",
+      "remaining": "200.00"
+    },
+    {
+      "clientId": "1769543729962",
+      "items": [
+        {
+          "desc": "Test Item",
+          "qty": 1,
+          "price": "100.00"
+        }
+      ],
+      "total": "100.00",
+      "advance": "100.00",
+      "deliveryLocation": "Entregado en Tienda",
+      "status": "entregado",
+      "date": "27/1/2026",
+      "id": "1769543729984",
+      "remaining": "0.00"
+    }
+  ],
+  "leads": [
+    {
+      "clientId": "1769549290997",
+      "name": "Social Client",
+      "email": "social@test.com",
+      "phone": "1234567890",
+      "details": "Fixed Quote Verification",
+      "quantity": "1",
+      "id": "1769555071048",
+      "date": "27/1/2026",
+      "status": "Nuevo"
+    },
+    {
+      "clientId": "1769549290997",
+      "name": "Social Client",
+      "email": "social@test.com",
+      "phone": "1234567890",
+      "details": "Fixed Quote",
+      "quantity": "1",
+      "id": "1769555005392",
+      "date": "27/1/2026",
+      "status": "Nuevo"
+    },
+    {
+      "name": "Enrique Taniguchi",
+      "email": "kike@tani.com",
+      "phone": "5556565",
+      "quantity": 1,
+      "details": "Test",
+      "refType": "link",
+      "refLink": "",
+      "id": "1769554808579",
+      "date": "27/1/2026",
+      "status": "Nuevo"
+    },
+    {
+      "name": "Frontend Test",
+      "email": "test@example.com",
+      "phone": "1234567890",
+      "quantity": "11",
+      "details": "Test quote",
+      "refType": "link",
+      "refLink": "",
+      "id": "1769552069222",
+      "date": "27/1/2026",
+      "status": "Nuevo"
+    },
+    {
+      "name": "Kike",
+      "email": "kike@kikemonk.com",
+      "phone": "",
+      "quantity": 1,
+      "details": "PortaBeyblade",
+      "refType": "link",
+      "refLink": "",
+      "id": "1769551791010",
+      "date": "27/1/2026",
+      "status": "Nuevo"
+    }
+  ]
+}

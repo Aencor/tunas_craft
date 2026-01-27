@@ -1,0 +1,760 @@
+<!doctype html>
+<html lang="es" class="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="public/logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tuna's Craft | Impresión 3D a Medida</title>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js & STLLoader -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/STLLoader.js"></script>
+    
+    <!-- Tailwind Config -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                blue: '#2563EB', 
+                dark: '#0F172A',
+                orange: '#F59E0B', 
+                light: '#F8FAFC', 
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+              display: ['Outfit', 'sans-serif'],
+            }
+          },
+        },
+        plugins: [],
+      }
+    </script>
+    
+    <!-- Custom CSS for Animations -->
+    <style>
+      @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+      }
+      .animate-float {
+        animation: float 4s ease-in-out infinite;
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+      
+      /* SVG Animation Styles */
+      @keyframes draw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      @keyframes fillIn {
+        to {
+          fill-opacity: 1;
+        }
+      }
+      
+      .svg-drawing path {
+        fill-opacity: 0;
+        stroke: #F59E0B; /* Brand Orange */
+        stroke-width: 3px;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: stroke 0.5s ease;
+      }
+      
+      .svg-active path {
+        animation: draw 2.5s ease-out forwards, fillIn 1s ease-out forwards 2s;
+      }
+    </style>
+  </head>
+  <body class="bg-brand-dark text-brand-light font-sans antialiased selection:bg-brand-orange selection:text-white">
+    
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 transition-all duration-300 bg-brand-dark/90 backdrop-blur-md border-b border-white/10">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-20">
+          <div class="flex-shrink-0 flex items-center gap-3">
+             <img class="h-12 w-auto" src="public/logo.png" alt="Tuna's Craft">
+             <span class="font-display font-bold text-2xl tracking-tight text-white">Tuna's Craft</span>
+          </div>
+          <div class="hidden md:flex space-x-8 items-center">
+            <a href="#services" class="text-gray-300 hover:text-brand-orange transition-colors font-medium">Servicios</a>
+            <a href="#delivery" class="text-gray-300 hover:text-brand-orange transition-colors font-medium">Entregas</a>
+            <a href="#gallery" class="text-gray-300 hover:text-brand-orange transition-colors font-medium">Galería</a>
+            <a href="cotizacion.html" class="bg-brand-blue hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-bold shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5">
+              Cotizar Ahora
+            </a>
+          </div>
+          <div class="md:hidden flex items-center">
+            <button id="mobile-menu-btn" class="text-gray-300 hover:text-white p-2">
+              <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div id="mobile-menu" class="hidden md:hidden bg-brand-dark border-t border-white/10 absolute w-full">
+        <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3 flex flex-col items-center">
+            <a href="#services" class="text-gray-300 hover:text-brand-orange block px-3 py-2 rounded-md text-base font-medium">Servicios</a>
+            <a href="#delivery" class="text-gray-300 hover:text-brand-orange block px-3 py-2 rounded-md text-base font-medium">Entregas</a>
+            <a href="#gallery" class="text-gray-300 hover:text-brand-orange block px-3 py-2 rounded-md text-base font-medium">Galería</a>
+             <a href="cotizacion.html" class="text-brand-blue font-bold block px-3 py-2 rounded-md text-base">Cotizar</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative min-h-screen flex items-center justify-center pt-20 overflow-hidden">
+      <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10">
+        <div class="absolute top-1/4 -left-20 w-96 h-96 bg-brand-blue/20 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute bottom-1/4 -right-20 w-96 h-96 bg-brand-orange/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center gap-12">
+        <div class="flex-1 text-center md:text-left z-10">
+          <h1 class="font-display text-5xl md:text-7xl font-extrabold leading-tight mb-6">
+            Tus ideas, impresas en <br>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-blue to-brand-orange">3D Realidad</span>
+          </h1>
+          <p class="text-xl text-gray-400 mb-8 max-w-2xl mx-auto md:mx-0">
+            Creamos figuras, adornos y piezas personalizadas con la mejor calidad. 
+            ¡Si lo imaginas, lo podemos imprimir!
+          </p>
+          <div class="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
+            <a href="cotizacion.html" class="bg-brand-blue hover:bg-blue-600 text-white text-lg px-8 py-4 rounded-xl font-bold shadow-xl shadow-blue-500/20 transition-all hover:-translate-y-1">
+              Hacer un Pedido
+            </a>
+            <a href="#gallery" class="glass hover:bg-white/10 text-white text-lg px-8 py-4 rounded-xl font-semibold transition-all">
+              Ver Catálogo
+            </a>
+          </div>
+        </div>
+        <div class="flex-1 relative z-10 animate-float">
+          <div id="hero-3d" class="relative w-80 h-80 md:w-[500px] md:h-[500px] mx-auto cursor-move" title="¡Arrastrame para rotar!">
+             <!-- 3D Canvas will be injected here -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Services -->
+    <section id="services" class="py-24 bg-brand-dark/50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="text-center mb-16">
+          <h2 class="font-display text-4xl font-bold mb-4">Nuestros <span class="text-brand-blue">Servicios</span></h2>
+          <p class="text-gray-400 max-w-2xl mx-auto">Calidad premium en cada capa.</p>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="group glass p-8 rounded-2xl hover:bg-white/5 transition-all cursor-default">
+            <div class="w-14 h-14 bg-brand-blue/20 rounded-xl flex items-center justify-center mb-6 text-3xl group-hover:scale-110 transition-transform">📏</div>
+            <h3 class="font-display text-2xl font-bold mb-3">Impresión a Medida</h3>
+            <p class="text-gray-400 leading-relaxed">Prototipos, refacciones y piezas técnicas diseñadas específicamente para tus necesidades.</p>
+          </div>
+          <div class="group glass p-8 rounded-2xl hover:bg-white/5 transition-all cursor-default">
+            <div class="w-14 h-14 bg-brand-orange/20 rounded-xl flex items-center justify-center mb-6 text-3xl group-hover:scale-110 transition-transform">🎨</div>
+            <h3 class="font-display text-2xl font-bold mb-3">Figuras y Arte</h3>
+            <p class="text-gray-400 leading-relaxed">Coleccionables de anime, videojuegos y miniaturas de alta resolución para pintar.</p>
+          </div>
+          <div class="group glass p-8 rounded-2xl hover:bg-white/5 transition-all cursor-default">
+            <div class="w-14 h-14 bg-purple-500/20 rounded-xl flex items-center justify-center mb-6 text-3xl group-hover:scale-110 transition-transform">🏠</div>
+            <h3 class="font-display text-2xl font-bold mb-3">Decoración</h3>
+            <p class="text-gray-400 leading-relaxed">Macetas, lámparas, litofanías y regalos únicos para darle vida a tus espacios.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Delivery & Payments -->
+    <section id="delivery" class="py-24 relative overflow-hidden">
+      <div class="absolute inset-0 bg-brand-blue/5 skew-y-3 transform origin-top-left scale-110"></div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div class="bg-brand-dark border border-white/10 rounded-3xl p-8 md:p-12 shadow-2xl flex flex-col md:flex-row gap-12 items-center">
+          <div class="flex-1">
+            <h2 class="font-display text-3xl md:text-4xl font-bold mb-8">Información de <span class="text-brand-orange">Entregas</span></h2>
+            <ul class="space-y-6">
+              <li class="flex items-start gap-4">
+                <div class="bg-brand-blue p-3 rounded-full text-white shrink-0 mt-1">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                </div>
+                <div>
+                  <h4 class="text-xl font-bold text-white mb-1">Punto de Entrega Principal</h4>
+                  <p class="text-lg text-gray-300 font-medium mb-3">Metro Chabacano, CDMX</p>
+                  <a href="https://maps.app.goo.gl/vVdkQ1RTzjMqWNRD8" target="_blank" class="inline-flex items-center gap-2 bg-brand-blue hover:bg-blue-600 text-white px-5 py-3 rounded-xl font-bold shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-1">
+                      <svg class="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                      Ver Ubicación en Mapa
+                  </a>
+                  <p class="text-sm text-brand-blue font-semibold mt-3">Sábados: 11:00 am - 3:00 pm</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-4">
+                 <div class="bg-gray-700 p-3 rounded-full text-white shrink-0 mt-1">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <div>
+                  <h4 class="text-xl font-bold text-white">Entregas Urgentes / Entre Semana</h4>
+                  <p class="text-gray-400">Punto a convenir (Con costo extra)</p>
+                </div>
+              </li>
+              <li class="flex items-start gap-4">
+                 <div class="bg-brand-orange p-3 rounded-full text-white shrink-0 mt-1">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                </div>
+                <div>
+                  <h4 class="text-xl font-bold text-white">Envíos a todo México</h4>
+                  <p class="text-gray-400">Paquetería segura (Con costo adicional)</p>
+                </div>
+              </li>
+            </ul>
+          </div>
+          <div class="flex-1 w-full bg-black/20 rounded-2xl p-8 border border-white/5">
+            <h3 class="text-2xl font-display font-bold mb-6 text-center">Métodos de Pago</h3>
+            <div class="grid grid-cols-2 gap-4 mb-8">
+               <div class="bg-brand-dark p-4 rounded-xl text-center border border-white/10 hover:border-brand-blue transition-colors flex items-center justify-center">💳 Tarjeta / MSI</div>
+               <div class="bg-brand-dark p-4 rounded-xl text-center border border-white/10 hover:border-brand-blue transition-colors flex items-center justify-center">💸 Transferencia</div>
+               <div class="bg-brand-dark p-4 rounded-xl text-center border border-white/10 hover:border-brand-blue transition-colors flex items-center justify-center">💵 Efectivo</div>
+               <div class="bg-white p-2 rounded-xl text-center border border-brand-blue hover:scale-105 transition-transform flex items-center justify-center shadow-lg shadow-blue-500/20">
+                   <img src="https://images.seeklogo.com/logo-png/19/1/mercadopago-logo-png_seeklogo-199533.png" alt="Mercado Pago" class="h-12 object-cover">
+               </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Gallery -->
+    <section id="gallery" class="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="font-display text-4xl font-bold mb-6 text-center text-white">Galería de <span class="text-brand-orange">Trabajos</span></h2>
+      
+      <!-- Filter Buttons Container -->
+      <div id="filter-container" class="flex flex-wrap justify-center gap-3 mb-10">
+        <!-- Buttons will be injected here -->
+      </div>
+
+      <div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
+    </section>
+
+    <!-- Contact -->
+    <section id="contact" class="py-24 bg-gradient-to-b from-brand-dark to-brand-blue/10">
+      <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="bg-brand-dark border border-white/10 p-10 rounded-3xl shadow-2xl">
+          <h2 class="font-display text-4xl font-bold mb-6 text-center">Cotiza tu <span class="text-brand-blue">Proyecto</span></h2>
+          <p class="text-center text-gray-400 mb-8">Llena el formulario y te escribiremos directamente por WhatsApp.</p>
+          <form id="whatsapp-form" class="space-y-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Nombre</label>
+              <input type="text" id="name" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-blue transition-all" placeholder="Tu nombre">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Correo Electrónico</label>
+              <input type="email" id="email" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-blue transition-all" placeholder="tucorreo@ejemplo.com">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-400 mb-2">Mensaje / Idea</label>
+              <textarea id="message" rows="4" required class="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-blue transition-all" placeholder="Cuéntanos qué quieres imprimir..."></textarea>
+            </div>
+            <button type="submit" class="w-full bg-brand-blue hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-1 flex justify-center items-center gap-2">
+              <span>Enviar WhatsApp</span>
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+            </button>
+          </form>
+          <div id="contact-logo-container" class="w-full max-w-[200px] mx-auto mt-12 opacity-0 transition-opacity duration-1000"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-black py-16 border-t border-white/10 relative overflow-hidden">
+      <!-- Background decoration -->
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-lg h-1 bg-gradient-to-r from-transparent via-brand-blue to-transparent opacity-50"></div>
+
+      <div class="max-w-7xl mx-auto px-4 text-center relative z-10">
+        <h3 class="font-display text-2xl font-bold text-white mb-8">Síguenos en nuestras redes</h3>
+        
+        <div class="flex justify-center gap-10 mb-10">
+           <a href="https://www.facebook.com/tunascraft3d" target="_blank" class="group flex flex-col items-center gap-2 text-gray-400 hover:text-[#1877F2] transition-colors duration-300">
+               <div class="p-4 bg-white/5 rounded-2xl group-hover:bg-[#1877F2]/10 group-hover:scale-110 transition-all duration-300 border border-white/5 group-hover:border-[#1877F2]/50 shadow-lg shadow-black/50">
+                   <svg class="w-10 h-10 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+               </div>
+               <span class="font-medium text-sm">Facebook</span>
+           </a>
+           
+           <a href="https://www.instagram.com/tunas_craft" target="_blank" class="group flex flex-col items-center gap-2 text-gray-400 hover:text-[#E4405F] transition-colors duration-300">
+               <div class="p-4 bg-white/5 rounded-2xl group-hover:bg-[#E4405F]/10 group-hover:scale-110 transition-all duration-300 border border-white/5 group-hover:border-[#E4405F]/50 shadow-lg shadow-black/50">
+                    <svg class="w-10 h-10 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+               </div>
+               <span class="font-medium text-sm">Instagram</span>
+           </a>
+        </div>
+        <p class="text-gray-500 font-medium text-sm">&copy; 2024 Tuna's Craft. Hecho con 💙 y 🟠.</p>
+      </div>
+    </footer>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    
+    <!-- Application Logic -->
+    <script>
+      $(document).ready(function() {
+        
+        // Mobile Menu Toggle
+        $('#mobile-menu-btn').click(function() {
+          $('#mobile-menu').slideToggle();
+        });
+
+        // 3D Model Logic
+        function init3D() {
+            const container = document.getElementById('hero-3d');
+            if (!container) return;
+
+            const scene = new THREE.Scene();
+            
+            // Camera setup
+            const camera = new THREE.PerspectiveCamera(50, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0, 150);
+
+            // Renderer setup
+            const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1); // White directional light
+            dirLight.position.set(10, 10, 10);
+            scene.add(dirLight);
+            
+            const orangeLight = new THREE.PointLight(0xF59E0B, 2, 100); // Brand Orange
+            orangeLight.position.set(-20, 0, 20);
+            scene.add(orangeLight);
+
+            const blueLight = new THREE.PointLight(0x2563EB, 2, 100); // Brand Blue
+            blueLight.position.set(20, 0, 20);
+            scene.add(blueLight);
+
+            // Load STL
+            const loader = new THREE.STLLoader();
+            loader.load('public/images/Tuna-s_craft.stl', function (geometry) {
+                // Center geometry
+                geometry.center();
+                geometry.computeBoundingBox();
+                
+                // Auto-scale logic
+                const boundingBox = geometry.boundingBox;
+                const size = new THREE.Vector3();
+                boundingBox.getSize(size);
+                
+                // Determine the largest dimension
+                const maxDim = Math.max(size.x, size.y, size.z);
+                
+                // Target size (e.g., 60 units) to fit well within the camera view (z=150)
+                const targetSize = 60; 
+                const scaleFactor = targetSize / maxDim;
+                
+                // Material - Metallic/Plastic look
+                const material = new THREE.MeshPhongMaterial({ 
+                    color: 0xffffff, 
+                    specular: 0x111111, 
+                    shininess: 200,
+                    vertexColors: false
+                });
+                
+                const mesh = new THREE.Mesh(geometry, material);
+                
+                // Apply calculated scale
+                mesh.rotation.x = -Math.PI / 2; // Z-up fix
+                mesh.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+                scene.add(mesh);
+
+                // Animation Loop
+                let isDragging = false;
+                let previousMousePosition = { x: 0, y: 0 };
+                let targetRotationX = -Math.PI / 2;
+                let targetRotationY = 0;
+
+                // Auto rotation
+                const animate = function () {
+                    requestAnimationFrame(animate);
+
+                    if (!isDragging) {
+                        mesh.rotation.z += 0.005; // Auto rotate on vertical axis (Z in this orientation)
+                    }
+
+                    renderer.render(scene, camera);
+                };
+
+                animate();
+                
+                // Simple Mouse Interaction
+                container.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    previousMousePosition = { x: e.offsetX, y: e.offsetY };
+                });
+
+                document.addEventListener('mouseup', () => isDragging = false);
+
+                container.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        const deltaMove = {
+                            x: e.offsetX - previousMousePosition.x,
+                            y: e.offsetY - previousMousePosition.y
+                        };
+
+                        const rotationSpeed = 0.005;
+                        mesh.rotation.z += deltaMove.x * rotationSpeed;
+                        mesh.rotation.x += deltaMove.y * rotationSpeed;
+
+                        previousMousePosition = { x: e.offsetX, y: e.offsetY };
+                    }
+                });
+                
+                // Handle Window Resize
+                window.addEventListener('resize', () => {
+                   if(container) {
+                       camera.aspect = container.clientWidth / container.clientHeight;
+                       camera.updateProjectionMatrix();
+                       renderer.setSize(container.clientWidth, container.clientHeight);
+                   }
+                });
+
+            }, undefined, function (error) {
+                console.error("Error loading STL:", error);
+                // Fallback text or keep container empty, user will see nothing if it fails roughly.
+            });
+        }
+        
+        init3D();
+
+        // Gallery Generation
+        const galleryGrid = $('#gallery-grid');
+        const filterContainer = $('#filter-container');
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZQKUeUWpxU8XNWtif8j4aEKN0InJpbxQFpK4Q4Ci5zVI1ZIlUlKTU42AomgXFPfa73Rb0w1CT1mU-/pub?output=csv';
+        
+        let allProducts = []; // Store all fetched products logic
+        let currentCategory = 'all';
+
+        // Fallback data in case of error or empty sheet
+        const fallbackProducts = [
+          { name: "Figura Anime", price: "$450", color: "#2563EB", quantity: 5, image: "public/images/anime-figure.png", category: "Figuras" },
+          { name: "Maceta Geométrica", price: "$120", color: "#F59E0B", quantity: 10, image: "public/images/planter.png", category: "Decoración" },
+          { name: "Soporte Audífonos", price: "$250", color: "#1E40AF", quantity: 0, image: "public/images/headphone-stand.png", category: "Accesorios" }
+        ];
+
+        async function fetchProducts() {
+            try {
+                const response = await fetch(SHEET_URL);
+                const data = await response.text();
+                const products = parseCSV(data);
+                
+                if (products.length > 0) {
+                    allProducts = products;
+                } else {
+                    allProducts = fallbackProducts;
+                }
+            } catch (error) {
+                console.error("Error cargando productos:", error);
+                allProducts = fallbackProducts;
+            }
+            
+            initGallery();
+        }
+
+        function initGallery() {
+            renderFilters(allProducts);
+            renderGallery(allProducts);
+        }
+
+        function renderFilters(products) {
+            // Get unique categories and remove empty ones / undefined
+            const categories = ['Todos', ...new Set(products.map(p => p.category).filter(c => c))];
+            
+            filterContainer.empty();
+            
+            categories.forEach(cat => {
+                const isActive = (cat === 'Todos' && currentCategory === 'all') || cat === currentCategory;
+                const baseClasses = "px-6 py-2 rounded-full font-bold text-sm tracking-wide transition-all duration-300 transform hover:scale-105 border-2 cursor-pointer";
+                const activeClasses = "bg-brand-orange text-white border-brand-orange shadow-lg shadow-orange-500/30";
+                const inactiveClasses = "bg-transparent text-gray-300 border-gray-600 hover:border-gray-400 hover:text-white";
+                
+                const btn = $(`<button class="${baseClasses} ${isActive ? activeClasses : inactiveClasses}">${cat}</button>`);
+                
+                btn.on('click', () => {
+                   currentCategory = cat === 'Todos' ? 'all' : cat;
+                   // Re-render filters to update active state
+                   renderFilters(products);
+                   // Filter products
+                   const filtered = currentCategory === 'all' 
+                       ? products 
+                       : products.filter(p => p.category === currentCategory);
+                   renderGallery(filtered);
+                });
+                
+                filterContainer.append(btn);
+            });
+        }
+
+        function getGoogleDriveImage(url) {
+            if (!url) return '';
+            
+            console.log("Processing image URL:", url); // Debug
+
+            // Regex for various Drive link formats
+            // Matches: /d/ID, id=ID, open?id=ID
+            const driveRegex = /(?:\/d\/|id=)([a-zA-Z0-9_-]+)/;
+            const match = url.match(driveRegex);
+            
+            if (match && match[1]) {
+                const id = match[1];
+                // Using a more reliable direct link format for <img> tags
+                // Note: 'uc?export=view' is standard, but sometimes 'uc?export=download' works better if view fails due to mime types, though view is usually correct for images.
+                // Let's try to stick with export=view but ensure the ID is clean.
+                console.log("  -> Extracted Drive ID:", id);
+                return `https://drive.google.com/thumbnail?id=${id}&sz=w800`; 
+                // Using 'thumbnail' endpoint with size 'w800' often works better than 'uc?export=view' for embedding images without auth issues or redirect loops.
+            }
+            
+            return url;
+        }
+
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n');
+            const products = [];
+            
+            // Handle headers, normalizing to lowercase and trimming
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            
+            for (let i = 1; i < lines.length; i++) {
+                // Handle potential loose commas in CSV basic parsing (simple split)
+                const currentLine = lines[i].split(',');
+                if (currentLine.length < headers.length) continue;
+
+                const product = {};
+                for (let j = 0; j < headers.length; j++) {
+                    let value = currentLine[j] ? currentLine[j].trim() : '';
+                    product[headers[j]] = value;
+                }
+                
+                // Normalizing keys to english if needed or just ensuring we have 'quantity'
+                // Mapping typical Spanish headers if they appear
+                if (product['cantidad']) product.quantity = product['cantidad'];
+                 // Handle 'quantity' if it's in English or just passed through
+                
+                if (product['precio']) product.price = product['precio'];
+                if (product['nombre']) product.name = product['nombre'];
+                
+                // Handle image from 'photo', 'foto', or 'imagen'
+                const rawImage = product['photo'] || product['foto'] || product['imagen'] || product['image'] || '';
+                product.image = getGoogleDriveImage(rawImage);
+                
+                // Handle category. Default to 'Otros' if missing? Or just skip? Let's keep empty if missing.
+                product.category = product['category'] || product['categoria'] || product['cat'] || 'Varios';
+                // Capitalize first letter of category for consistency
+                if (product.category) {
+                    product.category = product.category.charAt(0).toUpperCase() + product.category.slice(1).toLowerCase(); 
+                }
+
+                products.push(product);
+            }
+            return products;
+        }
+
+        function renderGallery(products) {
+            galleryGrid.empty();
+            
+            products.forEach((product) => {
+                const quantity = parseInt(product.quantity || 0);
+                const isAvailable = quantity > 0;
+                
+                const badgeClass = isAvailable 
+                    ? "bg-green-500 text-white" 
+                    : "bg-gray-500 text-white";
+                const badgeText = isAvailable ? "Disponible" : "Agotado";
+
+                // Use image if available and not empty, otherwise fallback to color gradient
+                const color = product.color || "#2563EB"; 
+                
+                const backgroundStyle = product.image && product.image.trim() !== ""
+                    ? `background-image: url('${product.image}'); background-size: cover; background-position: center;` 
+                    : `background: linear-gradient(135deg, ${color} 40%, transparent);`;
+                
+                const bgClass = product.image && product.image.trim() !== ""
+                    ? "group-hover:scale-110 transition-transform duration-500" 
+                    : "opacity-80 group-hover:opacity-100 transition-opacity";
+
+                const item = `
+                  <div class="group relative overflow-hidden rounded-2xl shadow-lg aspect-square bg-gray-900 cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02]" onclick="openLightbox('${product.image || ''}')">
+                    <div style="width: 100%; height: 100%; ${backgroundStyle}" class="${bgClass}"></div>
+                    
+                    <div class="absolute top-4 right-4 flex flex-col items-end gap-2 z-10">
+                        <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${badgeClass}">
+                            ${badgeText}
+                        </span>
+                        ${isAvailable ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-medium bg-black/50 text-white backdrop-blur-sm border border-white/20">${quantity} disp.</span>` : ''}
+                    </div>
+
+                    <div class="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
+                      <h3 class="text-white font-bold text-lg drop-shadow-md leading-tight">${product.name}</h3>
+                      <p class="text-brand-orange font-bold text-xl mt-1">${product.price}</p>
+                    </div>
+                  </div>
+                `;
+                galleryGrid.append(item);
+            });
+        }
+
+        // Init
+        fetchProducts();
+
+        // WhatsApp Form Handler
+        $('#whatsapp-form').on('submit', function(e) {
+            e.preventDefault();
+            const name = $('#name').val();
+            const email = $('#email').val();
+            const message = $('#message').val();
+            
+            const fullMessage = `Hola Tuna's Craft! 👋\n\nMi nombre es *${name}* (${email}).\n\nMe interesa el siguiente servicio/proyecto:\n${message}`;
+            const phone = '525619956812'; // Updated number
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(fullMessage)}`;
+            window.open(url, '_blank');
+        });
+
+        // SVG Logo Animation
+        function initLogoAnimation() {
+            const container = document.getElementById('contact-logo-container');
+            const svgUrl = 'public/images/tunas_logo.svg';
+
+            fetch(svgUrl)
+                .then(response => response.text())
+                .then(svgContent => {
+                    container.innerHTML = svgContent;
+                    
+                    const svg = container.querySelector('svg');
+                    if (!svg) return;
+
+                    // Clean up SVG dimensions to be responsive
+                    if (!svg.getAttribute('viewBox')) {
+                        svg.setAttribute('viewBox', '0 0 1024 1024');
+                    }
+                    svg.setAttribute('width', '100%');
+                    svg.setAttribute('height', 'auto');
+                    svg.classList.add('svg-drawing');
+
+                    const paths = svg.querySelectorAll('path');
+                    paths.forEach(path => {
+                        const length = path.getTotalLength();
+                        path.style.strokeDasharray = length;
+                        path.style.strokeDashoffset = length;
+                    });
+
+                    // Reveal container
+                    container.classList.remove('opacity-0');
+
+                    // Setup Observer
+                    const observer = new IntersectionObserver((entries) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                svg.classList.add('svg-active');
+                                observer.disconnect(); // Animate only once
+                            }
+                        });
+                    }, { threshold: 0.5 });
+
+                    observer.observe(container);
+                })
+                .catch(err => console.error("Error loading SVG logo:", err));
+        }
+
+        initLogoAnimation();
+
+    }); // End of $(document).ready
+
+        // Lightbox Functions
+
+        function openLightbox(src) {
+            if (!src || src.trim() === '') return;
+            
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            
+            lightboxImg.src = src;
+            lightbox.classList.remove('hidden');
+            // Small delay to allow display:block to apply before opacity transition
+            setTimeout(() => {
+                lightbox.classList.remove('opacity-0');
+                lightboxImg.classList.remove('scale-95');
+                lightboxImg.classList.add('scale-100');
+            }, 10);
+            
+            document.body.style.overflow = 'hidden'; // Prevent scrolling
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImg = document.getElementById('lightbox-img');
+            
+            lightbox.classList.add('opacity-0');
+            lightboxImg.classList.remove('scale-100');
+            lightboxImg.classList.add('scale-95');
+            
+            setTimeout(() => {
+                lightbox.classList.add('hidden');
+                lightboxImg.src = '';
+                document.body.style.overflow = ''; // Restore scrolling
+            }, 300);
+        }
+
+        // Close lightbox with Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLightbox();
+        });
+
+        // Contact Button Handler
+        function openWhatsApp(productName) {
+            const message = productName 
+                ? `Hola, me interesa el producto: ${productName}. ¿Está disponible?`
+                : "Hola, me gustaría cotizar una impresión 3D.";
+            const phone = '525619956812'; // Updated number
+            const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+
+        // Add smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+    </script>
+
+    <!-- Lightbox Modal -->
+    <div id="lightbox" class="fixed inset-0 z-[60] bg-black/90 hidden flex items-center justify-center opacity-0 transition-opacity duration-300" onclick="if(event.target === this) closeLightbox()">
+        <button onclick="closeLightbox()" class="absolute top-4 right-4 text-white hover:text-brand-orange transition-colors p-2">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+        <img id="lightbox-img" src="" alt="Full view" class="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl transform scale-95 transition-transform duration-300" onclick="event.stopPropagation()">
+    </div>
+  </body>
+</html>
