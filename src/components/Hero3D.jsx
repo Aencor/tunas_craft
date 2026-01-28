@@ -39,7 +39,7 @@ export default function Hero3D() {
         <Float speed={2} rotationIntensity={0.5} floatIntensity={0.5}>
             <Center>
             <React.Suspense fallback={null}>
-                <Model url="/images/Tuna-s_craft.stl" />
+                <Model url={`${import.meta.env.BASE_URL}images/Tuna-s_craft.stl`} />
             </React.Suspense>
             </Center>
         </Float>
