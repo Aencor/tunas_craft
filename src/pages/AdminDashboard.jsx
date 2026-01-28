@@ -302,7 +302,7 @@ const AdminDashboard = () => {
     };
 
     // Generic Create/Update Order
-    const handleCreateOrder = (e) => {
+    const handleCreateOrder = async (e) => {
         e.preventDefault();
         const formData = new FormData(e.target);
         const clientIdRaw = formData.get('clientId');
@@ -326,7 +326,7 @@ const AdminDashboard = () => {
 
             const fullAddress = `${street}, Col. ${colony}, ${utf8Zip}, ${state}`;
 
-            const newClient = addClient({ 
+            const newClient = await addClient({ 
                 name, 
                 email: contact, // Keeping email as contact for legacy, but we have phone now
                 phone,
@@ -350,21 +350,23 @@ const AdminDashboard = () => {
             items: orderItems.map(item => ({ ...item, price: parseFloat(item.price).toFixed(2) })),
             total: orderTotal.toFixed(2),
             advance: advance.toFixed(2),
+            remaining: (orderTotal - advance).toFixed(2),
             deliveryLocation: formData.get('delivery'),
             status: 'pedido', // Default, logic in context preserves or overwrites
-            date: new Date().toLocaleDateString('es-MX')
+            date: new Date().toLocaleDateString('es-MX'),
+            deadline: formData.get('deadline') // New Field
         };
 
         if (editingOrderId) {
             // Update Existing
-            updateOrder(editingOrderId, {
+            await updateOrder(editingOrderId, {
                 ...orderData,
                 status: orders.find(o => o.id === editingOrderId)?.status // Preserve status
             });
             alert('Pedido actualizado');
         } else {
             // Create New
-            addOrder(orderData);
+            await addOrder(orderData);
         }
         
         setNewOrderModal(false);
@@ -527,6 +529,8 @@ const AdminDashboard = () => {
                                         <th className="p-4">ID</th>
                                         <th className="p-4">Cliente</th>
                                         <th className="p-4">Entrega</th>
+                                        <th className="p-4">Entrega</th>
+                                        <th className="p-4">Fecha Entrega</th>
                                         <th className="p-4">Restante</th>
                                         <th className="p-4">Estatus</th>
                                         <th className="p-4">Total</th>
@@ -542,6 +546,7 @@ const AdminDashboard = () => {
                                                 <div className="text-xs text-slate-500 max-w-[150px] truncate">{order.deliveryLocation || 'Sin ubicación'}</div>
                                             </td>
                                             <td className="p-4 text-sm font-bold text-center">{order.items ? order.items.length : 1}</td>
+                                            <td className="p-4 text-sm text-slate-400">{order.deadline || 'Pendiente'}</td>
                                             <td className="p-4 text-brand-orange font-bold">${order.remaining}</td>
                                             <td className="p-4">
                                                 <div className="flex flex-col gap-2">
@@ -806,13 +811,34 @@ const AdminDashboard = () => {
                                         </div>
                                         <div className="flex justify-between items-center">
                                              <span className="text-xs text-gray-400">Anticipo:</span>
-                                             <input name="advance" type="number" defaultValue="0" className="w-24 bg-black/50 border border-slate-700 rounded p-1 text-right text-sm" />
+                                             <input 
+                                                 name="advance" 
+                                                 type="number" 
+                                                 defaultValue={editingOrderId ? orders.find(o => o.id === editingOrderId)?.advance : "0"} 
+                                                 className="w-24 bg-black/50 border border-slate-700 rounded p-1 text-right text-sm" 
+                                             />
+                                        </div>
+                                        <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-700">
+                                            <span className="text-xs text-gray-400">Fecha Entrega:</span>
+                                            <input 
+                                                name="deadline" 
+                                                type="date" 
+                                                defaultValue={editingOrderId ? orders.find(o => o.id === editingOrderId)?.deadline : ""}
+                                                className="w-32 bg-black/50 border border-slate-700 rounded p-1 text-right text-sm" 
+                                            />
                                         </div>
                                     </div>
                                 </div>
                                 <div>
                                     <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Entrega</label>
-                                    <textarea id="deliveryInput" name="delivery" placeholder="Dirección de entrega..." className="w-full h-full bg-slate-900 border border-slate-600 rounded p-2 text-sm resize-none" required></textarea>
+                                    <textarea 
+                                        id="deliveryInput" 
+                                        name="delivery" 
+                                        defaultValue={editingOrderId ? orders.find(o => o.id === editingOrderId)?.deliveryLocation : ""}
+                                        placeholder="Dirección de entrega..." 
+                                        className="w-full h-full bg-slate-900 border border-slate-600 rounded p-2 text-sm resize-none" 
+                                        required
+                                    ></textarea>
                                 </div>
                             </div>
                         </div>

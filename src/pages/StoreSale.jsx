@@ -9,6 +9,7 @@ const StoreSale = () => {
 
     const [clientName, setClientName] = useState('');
     const [clientContact, setClientContact] = useState(''); // Email or Phone
+    const [deadline, setDeadline] = useState(''); // New State
     
     // Items state
     const [items, setItems] = useState([{ desc: '', qty: 1, price: '' }]);
@@ -69,7 +70,9 @@ const StoreSale = () => {
             advance: total.toFixed(2), // Fully paid
             deliveryLocation: 'Entregado en Tienda',
             status: 'entregado',
-            date: new Date().toLocaleDateString('es-MX')
+            status: 'entregado',
+            date: new Date().toLocaleDateString('es-MX'),
+            deadline: deadline || new Date().toISOString().split('T')[0] // Default to today if empty
         });
 
         alert('¡Venta registrada con éxito!');
@@ -177,6 +180,15 @@ const StoreSale = () => {
                         <div className="flex items-center gap-2 text-green-400 text-sm">
                             <CheckCircle size={16} />
                             <span>La venta se registrará como <strong>ENTREGADA</strong> y pagada al 100%.</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <label className="text-sm text-slate-400">Entrega:</label>
+                            <input 
+                                type="date" 
+                                className="bg-slate-800 border border-slate-600 rounded p-2 text-white text-sm focus:border-brand-blue outline-none"
+                                value={deadline}
+                                onChange={e => setDeadline(e.target.value)}
+                            />
                         </div>
                         <div className="flex items-center gap-6">
                             <div className="text-right">
