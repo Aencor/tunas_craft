@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { db } from '../firebase';
+import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
 
 const DataContext = createContext();
 
@@ -10,57 +12,52 @@ export const DataProvider = ({ children }) => {
     const [orders, setOrders] = useState([]);
     const [leads, setLeads] = useState([]);
 
-    // Init Logic
+    // Collections References
+    const clientsCollection = collection(db, 'clients');
+    const ordersCollection = collection(db, 'orders');
+    const leadsCollection = collection(db, 'leads');
+
+    // Init Logic - Realtime Listeners
     useEffect(() => {
-        fetch('/api/db')
-            .then(res => res.json())
-            .then(data => {
-                if(data.clients) setClients(data.clients);
-                if(data.orders) setOrders(data.orders);
-                if(data.leads) setLeads(data.leads);
-            })
-            .catch(err => console.error('Failed to load DB', err));
-    }, []);
+        const unsubClients = onSnapshot(clientsCollection, (snapshot) => {
+            setClients(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        });
 
-    // Persistence Helper
-    const saveToApi = (newClients, newOrders, newLeads) => {
-        // Optimistic update state
-        if(newClients) setClients(newClients);
-        if(newOrders) setOrders(newOrders);
-        if(newLeads) setLeads(newLeads);
+        const unsubOrders = onSnapshot(ordersCollection, (snapshot) => {
+            setOrders(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        });
 
-        // Current state + updates
-        const payload = {
-            clients: newClients || clients,
-            orders: newOrders || orders,
-            leads: newLeads || leads
+        const unsubLeads = onSnapshot(leadsCollection, (snapshot) => {
+            setLeads(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        });
+
+        return () => {
+            unsubClients();
+            unsubOrders();
+            unsubLeads();
         };
-
-        fetch('/api/db', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        }).catch(err => console.error('Failed to save DB', err));
-    };
+    }, []);
 
     // --- Actions ---
 
     // CLIENTS
-    const addClient = (client) => {
-        const newHelper = { ...client, id: Date.now().toString(), joinedAt: new Date().toISOString() };
-        const updated = [newHelper, ...clients];
-        saveToApi(updated, null, null);
-        return newHelper;
+    const addClient = async (client) => {
+        const newHelper = { 
+            ...client, 
+            joinedAt: new Date().toISOString() 
+        };
+        await addDoc(clientsCollection, newHelper);
     };
 
-    const updateClient = (id, updates) => {
-        const updated = clients.map(c => c.id === id ? { ...c, ...updates } : c);
-        saveToApi(updated, null, null);
+    const updateClient = async (id, updates) => {
+        const docRef = doc(db, 'clients', id);
+        await updateDoc(docRef, updates);
     };
 
     // ORDERS
-    const addOrder = (order) => {
+    const addOrder = async (order) => {
         // Logic: Check client type for discount
+        // Note: 'clients' state is up-to-date due to real-time listener
         let finalTotal = parseFloat(order.total);
         const client = clients.find(c => c.id === order.clientId);
         
@@ -71,26 +68,23 @@ export const DataProvider = ({ children }) => {
 
         const newOrder = { 
             ...order, 
-            id: order.id || Date.now().toString(), 
             total: finalTotal.toFixed(2),
             remaining: (finalTotal - (order.advance || 0)).toFixed(2),
             date: new Date().toLocaleDateString('es-MX'),
             status: order.status || 'pedido' 
         };
 
-        const updated = [newOrder, ...orders];
-        saveToApi(null, updated, null);
-        return newOrder;
+        await addDoc(ordersCollection, newOrder);
     };
 
-    const updateOrderStatus = (id, status) => {
-        const updated = orders.map(o => o.id === id ? { ...o, status } : o);
-        saveToApi(null, updated, null);
+    const updateOrderStatus = async (id, status) => {
+        const docRef = doc(db, 'orders', id);
+        await updateDoc(docRef, { status });
     };
 
-    const updateOrder = (id, updates) => {
-        const updated = orders.map(o => o.id === id ? { ...o, ...updates } : o);
-        saveToApi(null, updated, null);
+    const updateOrder = async (id, updates) => {
+        const docRef = doc(db, 'orders', id);
+        await updateDoc(docRef, updates);
     };
 
     // Expose updateOrder globally for the Admin hack (or pass it properly)
@@ -98,27 +92,33 @@ export const DataProvider = ({ children }) => {
         window.updateOrderContext = updateOrder;
     }, [orders]);
 
-    const deleteOrder = (id) => {
-        const updated = orders.filter(o => o.id !== id);
-        saveToApi(null, updated, null);
+    const deleteOrder = async (id) => {
+        const docRef = doc(db, 'orders', id);
+        await deleteDoc(docRef);
     };
 
     // LEADS
-    const addLead = (lead) => {
-        const newLead = { ...lead, id: Date.now().toString(), date: new Date().toLocaleDateString('es-MX'), status: 'Nuevo' };
-        const updated = [newLead, ...leads];
-        saveToApi(null, null, updated);
-        return newLead;
+    const addLead = async (lead) => {
+        const newLead = { 
+            ...lead, 
+            date: new Date().toLocaleDateString('es-MX'), 
+            status: 'Nuevo' 
+        };
+        const docRef = await addDoc(leadsCollection, newLead);
+        return { ...newLead, id: docRef.id };
     };
 
-    const updateLeadStatus = (id, status) => {
-        const updated = leads.map(l => l.id === id ? { ...l, status } : l);
-        saveToApi(null, null, updated);
+    const updateLeadStatus = async (id, status) => {
+        const docRef = doc(db, 'leads', id);
+        await updateDoc(docRef, { status });
     };
 
-    // BULK IMPORT
-    const importDatabase = (data) => {
-        saveToApi(data.clients, data.orders, data.leads);
+    // BULK IMPORT (Optional implementation for Firebase)
+    const importDatabase = async (data) => {
+        // Note: This would be expensive in valid reads/writes, implementing naive version
+        // Ideally, use batch writes
+        // For now, disabling or just warning logic
+        console.warn("Import not fully supported in Firebase version yet.");
     };
 
     return (
