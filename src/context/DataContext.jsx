@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
-import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
 
 const DataContext = createContext();
 
@@ -13,32 +13,30 @@ export const DataProvider = ({ children }) => {
     const [orders, setOrders] = useState([]);
     const [leads, setLeads] = useState([]);
     const [user, setUser] = useState(null);
+    const [loadingAuth, setLoadingAuth] = useState(true);
 
     // Collections References
     const clientsCollection = collection(db, 'clients');
     const ordersCollection = collection(db, 'orders');
     const leadsCollection = collection(db, 'leads');
 
-    // Init Logic - Realtime Listeners
+    // Auth & Listeners
     useEffect(() => {
-        // 1. Sign In Anonymously
         const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
+            setUser(currentUser);
+            setLoadingAuth(false);
+            
             if (currentUser) {
-                console.log("Firebase Auth: Signed in as", currentUser.uid);
-                setUser(currentUser);
-                
-                // 2. Start Listeners ONLY after auth
+                // Subscribe to data only when logged in
                 const unsubClients = onSnapshot(clientsCollection, (snapshot) => {
                     setClients(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                }, (error) => console.error("Error reading clients:", error));
-
+                });
                 const unsubOrders = onSnapshot(ordersCollection, (snapshot) => {
                     setOrders(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                }, (error) => console.error("Error reading orders:", error));
-
+                });
                 const unsubLeads = onSnapshot(leadsCollection, (snapshot) => {
                     setLeads(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                }, (error) => console.error("Error reading leads:", error));
+                });
 
                 return () => {
                     unsubClients();
@@ -46,13 +44,33 @@ export const DataProvider = ({ children }) => {
                     unsubLeads();
                 };
             } else {
-                console.log("Firebase Auth: Signing in...");
-                signInAnonymously(auth).catch((error) => console.error("Auth Failed:", error));
+                // Clear state on logout
+                setClients([]);
+                setOrders([]);
+                setLeads([]);
             }
         });
 
         return () => unsubAuth();
     }, []);
+
+    const login = async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+            await signInWithPopup(auth, provider);
+        } catch (error) {
+            console.error("Login failed", error);
+            alert("Error al iniciar sesión: " + error.message);
+        }
+    };
+
+    const logout = async () => {
+        try {
+            await signOut(auth);
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
+    };
 
     // --- Actions ---
 
@@ -141,7 +159,8 @@ export const DataProvider = ({ children }) => {
 
     return (
         <DataContext.Provider value={{
-            clients, orders, leads,
+            clients, orders, leads, user, loadingAuth,
+            login, logout,
             addClient, updateClient,
             addOrder, updateOrderStatus, updateOrder, deleteOrder,
             addLead, updateLeadStatus,

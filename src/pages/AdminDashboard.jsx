@@ -5,18 +5,34 @@ import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowL
 import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
-    const { clients, orders, leads, addClient, updateClient, addOrder, updateOrderStatus, updateOrder, deleteOrder, addLead, updateLeadStatus, importDatabase } = useData();
-    // We need a helper to update order with more fields (like image), reusing addOrder or creating new one?
-    // DataContext doesn't have updateOrderGeneric. Let's add it or use a trick.
-    // Actually, updateOrderStatus only updates status. We need to update the image.
-    // Let's modify DataContext to allow generic updates or add a specific action. 
-    // Since I can't easily modify DataContext in this single step without editing it first, 
-    // I'll assume I'll add `updateOrderImage` to DataContext in the next step.
-    // For now, let's just assume `updateOrderStatus` can be refactored or we add `updateOrder`.
+    const { 
+        clients, orders, leads, user, loadingAuth, login, logout,
+        addClient, updateClient, addOrder, updateOrderStatus, updateOrder, deleteOrder, addLead, updateLeadStatus, importDatabase 
+    } = useData();
+
+    if (loadingAuth) return <div className="flex items-center justify-center h-screen bg-slate-900 text-white">Cargando...</div>;
+
+    if (!user) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-4">
+                <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700 text-center max-w-md w-full">
+                     <h1 className="font-display font-bold text-3xl mb-2">Tuna's <span className="text-brand-orange">Admin</span></h1>
+                     <p className="text-slate-400 mb-8">Inicia sesión para gestionar tu negocio.</p>
+                     
+                     <button 
+                        onClick={login}
+                        className="w-full bg-white text-gray-900 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
+                     >
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
+                        Acceder con Google
+                     </button>
+                </div>
+            </div>
+        );
+    }
     
-    // Better approach: I will edit DataContext FIRST to add `updateOrder` generic. 
-    // BUT, to save steps, I will use `updateOrderStatus` if I can, OR I'll just write the Admin change assuming the context functions exist, 
-    // and then update the context.
+    // DataContext logic assumed generic updateOrder helper for simplicity in previous steps? 
+    // Actually relying on what's available.
     
     const [activeTab, setActiveTab] = useState('dashboard');
     
@@ -402,14 +418,17 @@ const AdminDashboard = () => {
                     <NavBtn id="leads" icon={<FileText />} label="Cotizaciones" active={activeTab} set={setActiveTab} />
                     <NavBtn id="clients" icon={<Users />} label="Clientes" active={activeTab} set={setActiveTab} />
                 </nav>
-                <div className="mt-auto pt-6 border-t border-slate-700">
-                    <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white mb-4">
+                <div className="mt-auto pt-6 border-t border-slate-700 space-y-2">
+                    <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white px-2">
                         <ArrowLeft size={16} /> Ir al Sitio
                     </Link>
-                    <label className="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded text-center items-center justify-center flex cursor-pointer gap-2">
-                        <Upload size={16} /> Importar DB
+                    <label className="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded text-center items-center justify-center flex cursor-pointer gap-2 text-sm">
+                        <Upload size={14} /> Importar DB
                         <input type="file" className="hidden" accept=".json" onChange={handleImport} />
                     </label>
+                    <button onClick={logout} className="w-full bg-red-900/30 hover:bg-red-900/50 text-red-200 p-2 rounded flex items-center justify-center gap-2 text-sm transition-colors">
+                        <Trash2 size={14} /> Cerrar Sesión
+                    </button>
                 </div>
              </aside>
 
