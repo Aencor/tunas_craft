@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import SalesChart from '../components/SalesChart';
-import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag } from 'lucide-react';
+import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const AdminDashboard = () => {
@@ -13,6 +13,7 @@ const AdminDashboard = () => {
     // -- HOOKS MUST BE TOP LEVEL --
     
     const [activeTab, setActiveTab] = useState('dashboard');
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile Menu State
     
     // Modals
     const [approvalModal, setApprovalModal] = useState(null);
@@ -415,16 +416,36 @@ const AdminDashboard = () => {
     const paginatedLeads = filteredLeads.slice(leadsPage * LEADS_PER_PAGE, (leadsPage + 1) * LEADS_PER_PAGE);
 
     return (
-        <div className="flex h-screen bg-slate-900 text-slate-100 font-sans overflow-hidden">
+        <div className="flex h-screen bg-slate-900 text-slate-100 font-sans overflow-hidden relative">
              
+             {/* Mobile Sidebar Toggle */}
+             <button 
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+                className="md:hidden absolute top-6 left-6 z-50 p-2 bg-slate-800 rounded-lg text-white shadow-lg border border-slate-700"
+            >
+                {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+             </button>
+
+             {/* Sidebar Overlay */}
+             {isSidebarOpen && (
+                 <div 
+                    className="fixed inset-0 bg-black/80 z-40 md:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                 ></div>
+             )}
+
              {/* Sidebar */}
-             <aside className="w-64 bg-slate-800 border-r border-slate-700 hidden md:flex flex-col p-6">
-                <h1 className="font-display font-bold text-2xl text-white mb-8">Tuna's <span className="text-brand-orange">Admin</span></h1>
+             <aside className={`
+                fixed md:static top-0 left-0 h-full w-64 bg-slate-800 border-r border-slate-700 
+                flex flex-col p-6 z-40 transition-transform duration-300 ease-in-out
+                ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+             `}>
+                <h1 className="font-display font-bold text-2xl text-white mb-8 ml-8 md:ml-0">Tuna's <span className="text-brand-orange">Admin</span></h1>
                 <nav className="space-y-2 flex-1">
-                    <NavBtn id="dashboard" icon={<Package />} label="Dashboard" active={activeTab} set={setActiveTab} />
-                    <NavBtn id="orders" icon={<CheckCircle />} label="Pedidos" active={activeTab} set={setActiveTab} />
-                    <NavBtn id="leads" icon={<FileText />} label="Cotizaciones" active={activeTab} set={setActiveTab} />
-                    <NavBtn id="clients" icon={<Users />} label="Clientes" active={activeTab} set={setActiveTab} />
+                    <NavBtn id="dashboard" icon={<Package />} label="Dashboard" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
+                    <NavBtn id="orders" icon={<CheckCircle />} label="Pedidos" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
+                    <NavBtn id="leads" icon={<FileText />} label="Cotizaciones" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
+                    <NavBtn id="clients" icon={<Users />} label="Clientes" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                 </nav>
                 <div className="mt-auto pt-6 border-t border-slate-700 space-y-2">
                     <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white px-2">
@@ -446,7 +467,7 @@ const AdminDashboard = () => {
                  {/* Dashboard */}
                  {activeTab === 'dashboard' && (
                      <div className="space-y-6">
-                         <h2 className="text-3xl font-display font-bold">Resumen</h2>
+                         <h2 className="text-3xl font-display font-bold md:ml-0 ml-12">Resumen</h2>
                          
                          {/* KPIs */}
                          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -466,16 +487,16 @@ const AdminDashboard = () => {
                  {/* Orders */}
                  {activeTab === 'orders' && (
                      <div>
-                         <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-3xl font-display font-bold">Pedidos</h2>
-                                                         <div className="flex gap-3">
-                                <Link to="/venta-tienda" className="bg-brand-orange hover:bg-orange-600 px-4 py-2 rounded-lg font-bold flex items-center gap-2 transition-colors">
+                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                            <h2 className="text-3xl font-display font-bold md:ml-0 ml-12">Pedidos</h2>
+                            <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
+                                <Link to="/venta-tienda" className="bg-brand-orange hover:bg-orange-600 px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors">
                                     <ShoppingBag size={18} /> Venta Mostrador
                                 </Link>
-                                <div className="relative">
+                                <div className="relative w-full md:w-auto">
                                     <input 
                                         placeholder="Buscar (ID, Cliente, Correo)..." 
-                                        className="bg-slate-800 border border-slate-600 rounded-lg pl-3 pr-10 py-2 w-64 text-sm focus:outline-none focus:border-brand-blue"
+                                        className="bg-slate-800 border border-slate-600 rounded-lg pl-3 pr-10 py-2 w-full md:w-64 text-sm focus:outline-none focus:border-brand-blue"
                                         value={orderFilter.search}
                                         onChange={(e) => setOrderFilter({...orderFilter, search: e.target.value})}
                                     />
@@ -494,13 +515,13 @@ const AdminDashboard = () => {
                                     <option value="terminado">Terminado</option>
                                     <option value="entregado">Entregado</option>
                                 </select>
-                                <button onClick={() => setNewOrderModal(true)} className="bg-brand-blue hover:bg-blue-600 px-4 py-2 rounded-lg font-bold flex items-center gap-2">
+                                <button onClick={() => setNewOrderModal(true)} className="bg-brand-blue hover:bg-blue-600 px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2">
                                     <Plus size={18} /> Nuevo Pedido
                                 </button>
                              </div>
                          </div>
-                         <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
-                            <table className="w-full text-left">
+                         <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 overflow-x-auto">
+                            <table className="w-full text-left min-w-[800px]">
                                 <thead className="bg-slate-700/50 text-slate-300">
                                     <tr>
                                         <th className="p-4">ID</th>
@@ -625,27 +646,27 @@ const AdminDashboard = () => {
                  {/* Leads */}
                  {activeTab === 'leads' && (
                      <div>
-                        <div className="flex justify-between items-center mb-6">
-                            <h2 className="text-3xl font-display font-bold">Cotizaciones</h2>
-                            <div className="flex gap-2">
-                                <button onClick={() => setNewLeadModal(true)} className="bg-brand-blue hover:bg-blue-600 px-3 py-2 rounded-lg font-bold flex items-center gap-2 text-sm">
-                                    <Plus size={16} /> Nueva
-                                </button>
-                                <select className="bg-slate-800 border border-slate-600 rounded p-2 text-sm" onChange={e => setLeadFilter({...leadFilter, status: e.target.value})}>
-                                    <option value="all">Ver Todos</option>
-                                    <option value="Nuevo">Nuevos</option>
-                                    <option value="Aceptada">Aceptadas</option>
-                                </select>
-                            </div>
-                        </div>
+                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                             <h2 className="text-3xl font-display font-bold md:ml-0 ml-12">Cotizaciones</h2>
+                             <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                                 <button onClick={() => setNewLeadModal(true)} className="bg-brand-blue hover:bg-blue-600 px-3 py-2 rounded-lg font-bold flex items-center justify-center gap-2 text-sm">
+                                     <Plus size={16} /> Nueva
+                                 </button>
+                                 <select className="bg-slate-800 border border-slate-600 rounded p-2 text-sm" onChange={e => setLeadFilter({...leadFilter, status: e.target.value})}>
+                                     <option value="all">Ver Todos</option>
+                                     <option value="Nuevo">Nuevos</option>
+                                     <option value="Aceptada">Aceptadas</option>
+                                 </select>
+                             </div>
+                         </div>
                         <div className="grid gap-4">
                             {paginatedLeads.map(lead => (
-                                <div key={lead.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex justify-between items-center">
-                                    <div>
+                                <div key={lead.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                                    <div className="w-full md:w-auto">
                                         <h3 className="font-bold">{lead.name}</h3>
                                         <p className="text-sm text-slate-400">{lead.details}</p>
                                     </div>
-                                    <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-4 w-full md:w-auto justify-between md:justify-end">
                                         <span className={`text-xs px-2 py-1 rounded-full ${lead.status === 'Aceptada' ? 'bg-green-500/20 text-green-400' : 'bg-brand-orange/20 text-brand-orange'}`}>
                                             {lead.status}
                                         </span>

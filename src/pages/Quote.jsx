@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { ArrowLeft, Upload, FileText, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { signInAnonymously } from 'firebase/auth';
+import { auth, storage } from '../firebase';
 
 const Quote = () => {
     const { addLead } = useData();
@@ -33,6 +34,12 @@ const Quote = () => {
         setIsSubmitting(true);
 
         try {
+            // Ensure auth for storage/firestore rules
+            if (!auth.currentUser) {
+                console.log("Signing in anonymously...");
+                await signInAnonymously(auth);
+            }
+
             let imageUrl = '';
             
             // Upload Image if present
@@ -83,7 +90,8 @@ const Quote = () => {
 
         } catch (error) {
             console.error("Error submitting quote:", error);
-            alert("Hubo un error al enviar la cotización. Intenta de nuevo.");
+            const msg = error.code ? `${error.code}: ${error.message}` : error.message;
+            alert(`Error al enviar: ${msg}`);
         } finally {
             setIsSubmitting(false);
         }
@@ -141,11 +149,25 @@ const Quote = () => {
                             <label className="block text-sm font-medium text-gray-300 mb-3">¿Tienes una referencia?</label>
                             <div className="flex gap-4 mb-4">
                                 <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="ref-type" value="link" checked={formData.refType === 'link'} onChange={handleRadio} className="text-brand-blue" />
+                                    <input 
+                                        type="radio" 
+                                        name="refType" 
+                                        value="link" 
+                                        checked={formData.refType === 'link'} 
+                                        onChange={handleRadio} 
+                                        className="text-brand-blue accent-brand-orange w-5 h-5" 
+                                    />
                                     <span>Enlace (Link)</span>
                                 </label>
                                 <label className="flex items-center gap-2 cursor-pointer">
-                                    <input type="radio" name="ref-type" value="image" checked={formData.refType === 'image'} onChange={handleRadio} className="text-brand-blue" />
+                                    <input 
+                                        type="radio" 
+                                        name="refType" 
+                                        value="image" 
+                                        checked={formData.refType === 'image'} 
+                                        onChange={handleRadio} 
+                                        className="text-brand-blue accent-brand-orange w-5 h-5" 
+                                    />
                                     <span>Imagen</span>
                                 </label>
                             </div>
