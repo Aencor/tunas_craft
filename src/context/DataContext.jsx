@@ -80,12 +80,18 @@ export const DataProvider = ({ children }) => {
 
     // CLIENTS
     const addClient = async (client) => {
-        const newHelper = { 
-            ...client, 
-            joinedAt: new Date().toISOString() 
-        };
-        const docRef = await addDoc(clientsCollection, newHelper);
-        return { ...newHelper, id: docRef.id };
+        try {
+            const newHelper = { 
+                ...client, 
+                joinedAt: new Date().toISOString() 
+            };
+            const docRef = await addDoc(clientsCollection, newHelper);
+            return { ...newHelper, id: docRef.id };
+        } catch (error) {
+            console.error("Error adding client:", error);
+            alert(`Error guardando cliente: ${error.code} - ${error.message}`);
+            throw error;
+        }
     };
 
     const updateClient = async (id, updates) => {
