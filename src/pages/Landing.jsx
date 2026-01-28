@@ -8,12 +8,74 @@ const Landing = () => {
     const [lightboxSrc, setLightboxSrc] = useState(null);
     const [activeCategory, setActiveCategory] = useState('all');
     
-    // Mock Data
-    const [products] = useState([
+    const [products, setProducts] = useState([
+        // Initial fallback
         { name: "Figura Anime", price: "$450", color: "#2563EB", quantity: 5, image: "/images/anime-figure.png", category: "Figuras" },
         { name: "Maceta Geométrica", price: "$120", color: "#F59E0B", quantity: 10, image: "/images/planter.png", category: "Decoración" },
         { name: "Soporte Audífonos", price: "$250", color: "#1E40AF", quantity: 0, image: "/images/headphone-stand.png", category: "Accesorios" },
     ]);
+
+    // FETCH LOGIC
+    useEffect(() => {
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZQKUeUWpxU8XNWtif8j4aEKN0InJpbxQFpK4Q4Ci5zVI1ZIlUlKTU42AomgXFPfa73Rb0w1CT1mU-/pub?output=csv';
+        
+        const fetchData = async () => {
+            try {
+                const response = await fetch(SHEET_URL);
+                const text = await response.text();
+                const fetchedProducts = parseCSV(text);
+                if (fetchedProducts.length > 0) {
+                    setProducts(fetchedProducts);
+                }
+            } catch (error) {
+                console.error("Error fetching gallery:", error);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    // HELPERS
+    const getGoogleDriveImage = (url) => {
+        if (!url) return '';
+        const driveRegex = /(?:\/d\/|id=)([a-zA-Z0-9_-]+)/;
+        const match = url.match(driveRegex);
+        if (match && match[1]) {
+            return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+        }
+        return url;
+    };
+
+    const parseCSV = (csvText) => {
+        const lines = csvText.split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+        const result = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            // Simple split for basic CSV
+            const currentLine = lines[i].split(','); 
+            if (currentLine.length < headers.length) continue;
+
+            const product = {};
+            headers.forEach((header, index) => {
+                let value = currentLine[index] ? currentLine[index].trim() : '';
+                product[header] = value;
+            });
+
+            // Map CSV columns to app state structure
+            if (product.name) {
+                result.push({
+                    name: product.name,
+                    price: product.price || '$0',
+                    quantity: parseInt(product.quantity || product.availability || 0),
+                    category: product.category || 'Otros',
+                    image: getGoogleDriveImage(product.photo || product.image),
+                    color: "#2563EB" // Default color
+                });
+            }
+        }
+        return result;
+    };
 
     const categories = ['Todos', ...new Set(products.map(p => p.category).filter(Boolean))];
     const filteredProducts = activeCategory === 'Todos' || activeCategory === 'all' 
@@ -224,6 +286,16 @@ const Landing = () => {
                         className="w-full h-full bg-cover bg-center group-hover:scale-110 transition-transform duration-500"
                         style={{ backgroundImage: `url('${product.image}')` }}
                     />
+                    
+                    {/* Availability Badge */}
+                    <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-10">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-sm ${
+                            (product.quantity > 0) ? "bg-green-500 text-white" : "bg-gray-500 text-white"
+                        }`}>
+                            {(product.quantity > 0) ? "Disponible" : "Agotado"}
+                        </span>
+                    </div>
+
                     <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black/90 via-black/50 to-transparent">
                         <h3 className="text-white font-bold text-lg drop-shadow-md leading-tight">{product.name}</h3>
                         <p className="text-brand-orange font-bold text-xl mt-1">{product.price}</p>
