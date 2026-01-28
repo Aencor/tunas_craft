@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
-import { ArrowLeft, Upload, FileText } from 'lucide-react';
+import { ArrowLeft, Upload, FileText, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const Quote = () => {
     const { addLead } = useData();
@@ -11,6 +13,7 @@ const Quote = () => {
         refType: 'link', refLink: ''
     });
 
+    const [imageFile, setImageFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
@@ -23,45 +26,67 @@ const Quote = () => {
         setFormData(prev => ({ ...prev, refType: e.target.value }));
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
 
         setIsSubmitting(true);
 
-        // Save to DataContext
-        const newItem = addLead(formData);
+        try {
+            let imageUrl = '';
+            
+            // Upload Image if present
+            if (formData.refType === 'image' && imageFile) {
+                const storageRef = ref(storage, `quotes/${Date.now()}_${imageFile.name}`);
+                await uploadBytes(storageRef, imageFile);
+                imageUrl = await getDownloadURL(storageRef);
+            }
 
-        // WhatsApp Logic
-        let message = `🧾 *Nueva Solicitud de Cotización*\n\n`;
-        message += `👤 *Nombre:* ${formData.name}\n`;
-        message += `📧 *Correo:* ${formData.email}\n`;
-        if(formData.phone) message += `📞 *Teléfono:* ${formData.phone}\n`;
-        message += `🔢 *Piezas:* ${formData.quantity}\n`;
-        
-        if (formData.refType === 'link' && formData.refLink) {
-            message += `🔗 *Referencia:* ${formData.refLink}\n`;
-        } else {
-            message += `🖼 *Referencia:* (Envío imagen a continuación)\n`;
-        }
-        
-        if(formData.details) message += `📝 *Detalles:* ${formData.details}\n`;
-        
-        // Safety check if newItem exists (it should with context update)
-        if(newItem && newItem.id) {
-             message += `\nID: ${newItem.id}`;
-        }
+            // Save to DataContext (Lead)
+            // Note: We might want to save the imageUrl in the lead too, but for now just WhatsApp
+            const newItem = addLead({
+                ...formData,
+                imageUrl: imageUrl || null
+            });
 
-        const phone = '525619956812';
-        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
-        
-        setShowSuccess(true);
-        setIsSubmitting(false);
-        setFormData({
-            name: '', email: '', phone: '',
-            quantity: 1, details: '',
-            refType: 'link', refLink: ''
-        });
+            // WhatsApp Logic
+            let message = `🧾 *Nueva Solicitud de Cotización*\n\n`;
+            message += `👤 *Nombre:* ${formData.name}\n`;
+            message += `📧 *Correo:* ${formData.email}\n`;
+            if(formData.phone) message += `📞 *Teléfono:* ${formData.phone}\n`;
+            message += `🔢 *Piezas:* ${formData.quantity}\n`;
+            
+            if (formData.refType === 'link' && formData.refLink) {
+                message += `🔗 *Referencia:* ${formData.refLink}\n`;
+            } else if (imageUrl) {
+                message += `🖼 *Imagen Referencia:* ${imageUrl}\n`;
+            } else {
+                message += `🖼 *Referencia:* (Sin referencia adjunta)\n`;
+            }
+            
+            if(formData.details) message += `📝 *Detalles:* ${formData.details}\n`;
+            
+            if(newItem && newItem.id) {
+                 message += `\nID: ${newItem.id}`;
+            }
+
+            const phone = '525619956812';
+            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
+            
+            setShowSuccess(true);
+            setFormData({
+                name: '', email: '', phone: '',
+                quantity: 1, details: '',
+                refType: 'link', refLink: ''
+            });
+            setImageFile(null);
+
+        } catch (error) {
+            console.error("Error submitting quote:", error);
+            alert("Hubo un error al enviar la cotización. Intenta de nuevo.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -128,9 +153,25 @@ const Quote = () => {
                             {formData.refType === 'link' ? (
                                 <input type="url" id="refLink" value={formData.refLink} onChange={handleChange} className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-blue transition-all" placeholder="https://..." />
                             ) : (
-                                <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center text-gray-400">
-                                    <Upload className="mx-auto mb-2" />
-                                    <span className="text-sm">La imagen se enviará en el chat de WhatsApp</span>
+                                <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center text-gray-400 hover:border-brand-orange/50 transition-colors relative">
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        onChange={(e) => setImageFile(e.target.files[0])}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                    {imageFile ? (
+                                        <div className="flex flex-col items-center">
+                                            <FileText className="text-brand-orange mb-2" />
+                                            <span className="text-white font-medium">{imageFile.name}</span>
+                                            <span className="text-xs text-green-400 mt-1">Listo para subir</span>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <Upload className="mx-auto mb-2" />
+                                            <span className="text-sm">Toca para seleccionar una imagen</span>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </div>

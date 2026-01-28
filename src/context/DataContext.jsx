@@ -99,8 +99,19 @@ export const DataProvider = ({ children }) => {
         await updateDoc(docRef, updates);
     };
 
+    const deleteClient = async (id) => {
+        try {
+            const docRef = doc(db, 'clients', id);
+            await deleteDoc(docRef);
+        } catch (error) {
+            console.error("Error deleting client:", error);
+            alert(`Error al eliminar cliente: ${error.code} - ${error.message}`);
+        }
+    };
+
     // ORDERS
     const addOrder = async (order) => {
+        // ... (rest of addOrder is fine, not replacing it, just ensuring context match)
         // Logic: Check client type for discount
         // Note: 'clients' state is up-to-date due to real-time listener
         let finalTotal = parseFloat(order.total);
@@ -139,8 +150,13 @@ export const DataProvider = ({ children }) => {
     }, [orders]);
 
     const deleteOrder = async (id) => {
-        const docRef = doc(db, 'orders', id);
-        await deleteDoc(docRef);
+        try {
+            const docRef = doc(db, 'orders', id);
+            await deleteDoc(docRef);
+        } catch (error) {
+            console.error("Error deleting order:", error);
+            alert(`Error al eliminar pedido: ${error.code} - ${error.message}`);
+        }
     };
 
     // LEADS
@@ -171,7 +187,7 @@ export const DataProvider = ({ children }) => {
         <DataContext.Provider value={{
             clients, orders, leads, user, loadingAuth,
             login, logout,
-            addClient, updateClient,
+            addClient, updateClient, deleteClient,
             addOrder, updateOrderStatus, updateOrder, deleteOrder,
             addLead, updateLeadStatus,
             importDatabase

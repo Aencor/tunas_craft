@@ -17,7 +17,7 @@ function Model({ url }) {
   })
 
   return (
-    <mesh ref={ref} geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} scale={[0.5, 0.5, 0.5]}>
+    <mesh ref={ref} geometry={geometry} rotation={[-Math.PI / 2, 0, 0]} scale={[40, 40, 40]}>
       <meshPhongMaterial 
         color={0xffffff} 
         specular={0x111111} 
@@ -30,7 +30,7 @@ function Model({ url }) {
 export default function Hero3D() {
   return (
     <div className="w-full h-full">
-      <Canvas camera={{ position: [0, 0, 150], fov: 50 }}>
+      <Canvas camera={{ position: [0, 0, 100], fov: 50 }}>
         <ambientLight intensity={0.6} />
         <directionalLight position={[10, 10, 10]} intensity={1} />
         <pointLight position={[-20, 0, 20]} color="#F59E0B" intensity={2} distance={100} />

@@ -391,6 +391,12 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleDeleteClient = (id) => {
+        if(confirm('¿Estás seguro de eliminar este cliente?')) {
+            deleteClient(id);
+        }
+    };
+
     // Derived State for Dashboard
     const totalSales = orders.reduce((sum, o) => sum + parseFloat(o.total || 0), 0);
     const totalPaid = orders.reduce((sum, o) => sum + parseFloat(o.advance || 0), 0);
@@ -600,9 +606,14 @@ const AdminDashboard = () => {
                                      )}
                                      <p className="text-xs text-slate-500 mt-2 truncate"><span className='font-bold'>Dirección:</span> {client.address || 'Sin dirección'}</p>
                                      
-                                     <button onClick={() => setEditClientModal(client)} className="mt-4 w-full py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs font-bold flex justify-center items-center gap-2">
-                                         <Edit size={14} /> Editar
-                                     </button>
+                                     <div className="flex gap-2 mt-4">
+                                         <button onClick={() => setEditClientModal(client)} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs font-bold flex justify-center items-center gap-2">
+                                             <Edit size={14} /> Editar
+                                         </button>
+                                         <button onClick={() => handleDeleteClient(client.id)} className="py-2 px-3 bg-red-900/30 hover:bg-red-900/50 text-red-200 rounded text-xs font-bold flex justify-center items-center">
+                                             <Trash2 size={14} />
+                                         </button>
+                                     </div>
                                  </div>
                              ))}
                          </div>

@@ -5,6 +5,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import Quote from './pages/Quote';
 import StoreSale from './pages/StoreSale';
 import OrderStatus from './pages/OrderStatus';
+import Catalog from './pages/Catalog';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/quote" element={<Quote />} />
         <Route path="/status" element={<OrderStatus />} />
+        <Route path="/catalogo" element={<Catalog />} />
         <Route path="/venta-tienda" element={<StoreSale />} />
         <Route path="/venta-fisica" element={<StoreSale />} />
       </Routes>

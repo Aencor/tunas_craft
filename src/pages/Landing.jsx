@@ -2,85 +2,25 @@ import React, { useState, useEffect } from 'react';
 import Hero3D from '../components/Hero3D';
 import { Menu, X, Instagram, Facebook, Ruler, Palette, Home, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useGallery } from '../hooks/useGallery';
 
 const Landing = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [lightboxSrc, setLightboxSrc] = useState(null);
     const [activeCategory, setActiveCategory] = useState('all');
     
-    const [products, setProducts] = useState([
-        // Initial fallback
-        { name: "Figura Anime", price: "$450", color: "#2563EB", quantity: 5, image: "/images/anime-figure.png", category: "Figuras" },
-        { name: "Maceta Geométrica", price: "$120", color: "#F59E0B", quantity: 10, image: "/images/planter.png", category: "Decoración" },
-        { name: "Soporte Audífonos", price: "$250", color: "#1E40AF", quantity: 0, image: "/images/headphone-stand.png", category: "Accesorios" },
-    ]);
-
-    // FETCH LOGIC
-    useEffect(() => {
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSZQKUeUWpxU8XNWtif8j4aEKN0InJpbxQFpK4Q4Ci5zVI1ZIlUlKTU42AomgXFPfa73Rb0w1CT1mU-/pub?output=csv';
-        
-        const fetchData = async () => {
-            try {
-                const response = await fetch(SHEET_URL);
-                const text = await response.text();
-                const fetchedProducts = parseCSV(text);
-                if (fetchedProducts.length > 0) {
-                    setProducts(fetchedProducts);
-                }
-            } catch (error) {
-                console.error("Error fetching gallery:", error);
-            }
-        };
-
-        fetchData();
-    }, []);
-
-    // HELPERS
-    const getGoogleDriveImage = (url) => {
-        if (!url) return '';
-        const driveRegex = /(?:\/d\/|id=)([a-zA-Z0-9_-]+)/;
-        const match = url.match(driveRegex);
-        if (match && match[1]) {
-            return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
-        }
-        return url;
-    };
-
-    const parseCSV = (csvText) => {
-        const lines = csvText.split('\n');
-        const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-        const result = [];
-
-        for (let i = 1; i < lines.length; i++) {
-            // Simple split for basic CSV
-            const currentLine = lines[i].split(','); 
-            if (currentLine.length < headers.length) continue;
-
-            const product = {};
-            headers.forEach((header, index) => {
-                let value = currentLine[index] ? currentLine[index].trim() : '';
-                product[header] = value;
-            });
-
-            // Map CSV columns to app state structure
-            if (product.name) {
-                result.push({
-                    name: product.name,
-                    price: product.price || '$0',
-                    quantity: parseInt(product.quantity || product.availability || 0),
-                    category: product.category || 'Otros',
-                    image: getGoogleDriveImage(product.photo || product.image),
-                    color: "#2563EB" // Default color
-                });
-            }
-        }
-        return result;
-    };
+    // Use Hook
+    const { products, loading } = useGallery();
 
     const categories = ['Todos', ...new Set(products.map(p => p.category).filter(Boolean))];
+    
+    // Filter logic
     const filteredProducts = activeCategory === 'Todos' || activeCategory === 'all' 
         ? products 
         : products.filter(p => p.category === activeCategory);
+
+    // Limit to 12 for Home
+    const displayedProducts = filteredProducts.slice(0, 12);
 
     const [isScrolled, setIsScrolled] = useState(false);
     useEffect(() => {
@@ -103,10 +43,11 @@ const Landing = () => {
                <span className="font-display font-bold text-2xl tracking-tight text-white">Tuna's Craft</span>
             </div>
             <div className="hidden md:flex space-x-8 items-center">
-              <a href="#services" className="text-gray-300 hover:text-brand-orange transition-colors font-medium">Servicios</a>
-              <a href="#delivery" className="text-gray-300 hover:text-brand-orange transition-colors font-medium">Entregas</a>
-              <a href="#gallery" className="text-gray-300 hover:text-brand-orange transition-colors font-medium">Galería</a>
-              <Link to="/quote" className="bg-brand-blue hover:bg-blue-600 text-white px-6 py-2.5 rounded-full font-bold shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5">
+              <a href="#gallery" className="text-slate-300 hover:text-white transition-colors">Galería</a>
+              <a href="#services" className="text-slate-300 hover:text-white transition-colors">Servicios</a>
+              <a href="#delivery" className="text-slate-300 hover:text-white transition-colors">Entregas</a>
+              <Link to="/status" className="text-slate-300 hover:text-white transition-colors">Status del Pedido</Link>
+              <Link to="/quote" className="bg-brand-orange hover:bg-orange-600 text-white px-6 py-2 rounded-full font-bold transition-all transform hover:scale-105 shadow-lg hover:shadow-orange-500/25">
                 Cotizar Ahora
               </Link>
             </div>
@@ -120,11 +61,16 @@ const Landing = () => {
         
         {/* Mobile Menu */}
         {isMenuOpen && (
-            <div className="md:hidden bg-brand-dark border-t border-white/10 absolute w-full p-4 flex flex-col gap-4 items-center">
-                <a href="#services" onClick={toggleMenu} className="text-gray-300">Servicios</a>
-                <a href="#delivery" onClick={toggleMenu} className="text-gray-300">Entregas</a>
-                <a href="#gallery" onClick={toggleMenu} className="text-gray-300">Galería</a>
-                <Link to="/quote" onClick={toggleMenu} className="text-brand-blue font-bold">Cotizar</Link>
+            <div className="md:hidden bg-brand-dark border-t border-white/10 p-4">
+                <div className="space-y-4 flex flex-col items-center">
+                    <a href="#gallery" onClick={toggleMenu} className="text-slate-300 hover:text-white text-lg">Galería</a>
+                    <a href="#services" onClick={toggleMenu} className="text-slate-300 hover:text-white text-lg">Servicios</a>
+                    <a href="#delivery" onClick={toggleMenu} className="text-slate-300 hover:text-white text-lg">Entregas</a>
+                    <Link to="/status" onClick={toggleMenu} className="text-slate-300 hover:text-white text-lg">Status del Pedido</Link>
+                    <Link to="/quote" onClick={toggleMenu} className="bg-brand-orange text-white px-8 py-3 rounded-full font-bold text-lg mt-4">
+                        Cotizar Ahora
+                    </Link>
+                </div>
             </div>
         )}
       </nav>
@@ -150,9 +96,6 @@ const Landing = () => {
                     <Link to="/quote" className="bg-brand-blue hover:bg-blue-600 text-white text-lg px-8 py-4 rounded-xl font-bold shadow-xl shadow-blue-500/20 transition-all hover:-translate-y-1">
                         Hacer un Pedido
                     </Link>
-                    <a href="#gallery" className="glass hover:bg-white/10 text-white text-lg px-8 py-4 rounded-xl font-semibold transition-all flex items-center justify-center">
-                        Ver Catálogo
-                    </a>
                 </div>
             </div>
             <div className="flex-1 w-full h-[400px] md:h-[600px] relative z-10">
@@ -276,7 +219,7 @@ const Landing = () => {
 
         {/* Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredProducts.map((product, idx) => (
+            {displayedProducts.map((product, idx) => (
                 <div 
                     key={idx}
                     onClick={() => setLightboxSrc(product.image)}
