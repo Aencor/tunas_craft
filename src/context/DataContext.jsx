@@ -60,7 +60,11 @@ export const DataProvider = ({ children }) => {
             await signInWithPopup(auth, provider);
         } catch (error) {
             console.error("Login failed", error);
-            alert("Error al iniciar sesión: " + error.message);
+            if (error.code === 'auth/unauthorized-domain') {
+                alert("Error: El dominio no está autorizado. Ve a Firebase Console -> Authentication -> Settings -> Authorized Domains y agrega 'tunascraft.com'.");
+            } else {
+                alert("Error al iniciar sesión: " + error.message);
+            }
         }
     };
 
