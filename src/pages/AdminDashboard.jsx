@@ -7,32 +7,10 @@ import { Link } from 'react-router-dom';
 const AdminDashboard = () => {
     const { 
         clients, orders, leads, user, loadingAuth, login, logout,
-        addClient, updateClient, addOrder, updateOrderStatus, updateOrder, deleteOrder, addLead, updateLeadStatus, importDatabase 
+        addClient, updateClient, addOrder, updateOrderStatus, updateOrder, deleteOrder, deleteClient, addLead, updateLeadStatus, importDatabase 
     } = useData();
 
-    if (loadingAuth) return <div className="flex items-center justify-center h-screen bg-slate-900 text-white">Cargando...</div>;
-
-    if (!user) {
-        return (
-            <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-4">
-                <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700 text-center max-w-md w-full">
-                     <h1 className="font-display font-bold text-3xl mb-2">Tuna's <span className="text-brand-orange">Admin</span></h1>
-                     <p className="text-slate-400 mb-8">Inicia sesión para gestionar tu negocio.</p>
-                     
-                     <button 
-                        onClick={login}
-                        className="w-full bg-white text-gray-900 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
-                     >
-                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
-                        Acceder con Google
-                     </button>
-                </div>
-            </div>
-        );
-    }
-    
-    // DataContext logic assumed generic updateOrder helper for simplicity in previous steps? 
-    // Actually relying on what's available.
+    // -- HOOKS MUST BE TOP LEVEL --
     
     const [activeTab, setActiveTab] = useState('dashboard');
     
@@ -58,14 +36,6 @@ const AdminDashboard = () => {
         setOrderTotal(total);
     }, [orderItems]);
 
-    const addOrderItem = () => setOrderItems([...orderItems, { desc: '', qty: 1, price: 0 }]);
-    const removeOrderItem = (index) => setOrderItems(orderItems.filter((_, i) => i !== index));
-    const updateOrderItem = (index, field, value) => {
-        const newItems = [...orderItems];
-        newItems[index][field] = value;
-        setOrderItems(newItems);
-    };
-    
     // Filters
     const [leadFilter, setLeadFilter] = useState({ status: 'all', clientId: '' });
     const [leadsPage, setLeadsPage] = useState(0);
@@ -74,8 +44,18 @@ const AdminDashboard = () => {
     // Order Filters
     const [orderFilter, setOrderFilter] = useState({ status: 'all', search: '' });
     
-    // Derived State for Orders
-    const filteredOrders = orders.filter(order => {
+    // -- FUNCTIONS --
+
+    const addOrderItem = () => setOrderItems([...orderItems, { desc: '', qty: 1, price: 0 }]);
+    const removeOrderItem = (index) => setOrderItems(orderItems.filter((_, i) => i !== index));
+    const updateOrderItem = (index, field, value) => {
+        const newItems = [...orderItems];
+        newItems[index][field] = value;
+        setOrderItems(newItems);
+    };
+
+    // Derived State for Orders (Safe to compute even if empty)
+    const filteredOrders = useMemo(() => orders.filter(order => {
         const search = orderFilter.search.toLowerCase();
         // Resolve client data for search
         const client = clients.find(c => c.id === order.clientId);
@@ -91,7 +71,29 @@ const AdminDashboard = () => {
         const matchesStatus = orderFilter.status === 'all' || order.status === orderFilter.status;
         
         return matchesSearch && matchesStatus;
-    });
+    }), [orders, clients, orderFilter]);
+
+    // -- EARLY RETURNS --
+    if (loadingAuth) return <div className="flex items-center justify-center h-screen bg-slate-900 text-white">Cargando...</div>;
+
+    if (!user) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-4">
+                <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700 text-center max-w-md w-full">
+                     <h1 className="font-display font-bold text-3xl mb-2">Tuna's <span className="text-brand-orange">Admin</span></h1>
+                     <p className="text-slate-400 mb-8">Inicia sesión para gestionar tu negocio.</p>
+                     
+                     <button 
+                        onClick={login}
+                        className="w-full bg-white text-gray-900 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
+                     >
+                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
+                        Acceder con Google
+                     </button>
+                </div>
+            </div>
+        );
+    }
 
     // --- LOGIC ---
 
