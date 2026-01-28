@@ -46,7 +46,8 @@ export const DataProvider = ({ children }) => {
             ...client, 
             joinedAt: new Date().toISOString() 
         };
-        await addDoc(clientsCollection, newHelper);
+        const docRef = await addDoc(clientsCollection, newHelper);
+        return { ...newHelper, id: docRef.id };
     };
 
     const updateClient = async (id, updates) => {
@@ -74,7 +75,8 @@ export const DataProvider = ({ children }) => {
             status: order.status || 'pedido' 
         };
 
-        await addDoc(ordersCollection, newOrder);
+        const docRef = await addDoc(ordersCollection, newOrder);
+        return { ...newOrder, id: docRef.id };
     };
 
     const updateOrderStatus = async (id, status) => {

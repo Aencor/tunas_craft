@@ -31,7 +31,7 @@ const StoreSale = () => {
         setItems(newItems);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // 1. Find or Create Client
@@ -49,19 +49,20 @@ const StoreSale = () => {
             finalClientId = existingClient.id;
         } else {
             // New Client (Inline)
-            const newClient = addClient({
+            // Await the async action and get the returned object with ID
+            const newClient = await addClient({
                 name: clientName || 'Cliente Mostrador',
                 email: clientContact.includes('@') ? clientContact : '',
                 phone: !clientContact.includes('@') ? clientContact : '',
                 type: 'normal',
                 address: 'En Tienda',
                 street: 'En Tienda', colony: '', zip: '', state: ''
-            });
+            }); // Now sync with new ID
             finalClientId = newClient.id;
         }
 
         // 2. Create Order
-        addOrder({
+        await addOrder({
             clientId: finalClientId,
             items: items.map(i => ({ ...i, price: parseFloat(i.price).toFixed(2) })),
             total: total.toFixed(2),
