@@ -3,17 +3,34 @@ import { useData } from '../context/DataContext';
 import SalesChart from '../components/SalesChart';
 import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import imageCompression from 'browser-image-compression';
+import { storage } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 const AdminDashboard = () => {
     const { 
-        clients, orders, leads, user, loadingAuth, login, logout,
-        addClient, updateClient, addOrder, updateOrderStatus, updateOrder, deleteOrder, deleteClient, addLead, updateLeadStatus, importDatabase 
+        clients, orders, leads, user, loadingAuth, login, logout, 
+        addClient, updateClient, 
+        addOrder, updateOrder, deleteOrder,
+        addLead, updateLead, deleteLead
     } = useData();
+
+    // Helper for status colors
+    const getStatusColor = (status) => {
+        switch(status) {
+            case 'pedido': return 'bg-brand-orange/20 text-brand-orange border-brand-orange/30';
+            case 'proceso': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+            case 'terminado': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+            case 'entregado': return 'bg-green-500/20 text-green-400 border-green-500/30';
+            default: return 'bg-slate-900 border-slate-600 text-slate-300';
+        }
+    };
 
     // -- HOOKS MUST BE TOP LEVEL --
     
     const [activeTab, setActiveTab] = useState('dashboard');
     const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile Menu State
+    const [isSubmitting, setIsSubmitting] = useState(false); // Loading state for forms
     
     // Modals
     const [approvalModal, setApprovalModal] = useState(null);
@@ -271,107 +288,139 @@ const AdminDashboard = () => {
         if(!file) return;
 
         const options = {
-            maxSizeMB: 1, // Increased from 0.5
-            maxWidthOrHeight: 1920, // Increased
+            maxSizeMB: 1, 
+            maxWidthOrHeight: 1920,
             useWebWorker: true,
             fileType: 'image/webp'
         };
 
         try {
             const compressedFile = await imageCompression(file, options);
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                if(window.updateOrderContext) window.updateOrderContext(uploadImageModal.orderId, { progressImage: event.target.result });
-                setUploadImageModal(null);
-            };
-            reader.readAsDataURL(compressedFile);
+            
+            // Upload to Firebase Storage
+            const fileRef = ref(storage, `orders/${uploadImageModal.orderId}/${Date.now()}_${file.name}`);
+            await uploadBytes(fileRef, compressedFile);
+            const downloadURL = await getDownloadURL(fileRef);
+
+            // Update Order in Firestore
+            await updateOrder(uploadImageModal.orderId, { progressImage: downloadURL });
+            
+            setUploadImageModal(null);
+            alert('Imagen subida con éxito');
+
         } catch (error) {
-            console.error('Compression failed, trying raw upload for small files...', error);
-            // Fallback: If file < 2MB, verify it as is
-            if(file.size < 2 * 1024 * 1024) {
-                 const reader = new FileReader();
-                 reader.onload = (event) => {
-                     if(window.updateOrderContext) window.updateOrderContext(uploadImageModal.orderId, { progressImage: event.target.result });
-                     setUploadImageModal(null);
-                 };
-                 reader.readAsDataURL(file);
-            } else {
-                 alert('Error: La imagen es muy grande y no se pudo comprimir. Intenta con una más pequeña.');
-            }
+            console.error('Error uploading image:', error);
+            alert('Error al subir la imagen.');
         }
     };
+
 
     // Generic Create/Update Order
     const handleCreateOrder = async (e) => {
         e.preventDefault();
-        const formData = new FormData(e.target);
-        const clientIdRaw = formData.get('clientId');
-        let finalClientId = clientIdRaw;
-
-        // If editing, we might not need to re-create inline client (usually input is disabled or pre-filled)
-        // But if user switched to "New Client" during edit? Let's assume standard flow.
-
-
-        // Inline Client Creation
-        if (clientIdRaw === 'new') {
-            const name = formData.get('newClientName');
-            const contact = formData.get('newClientContact'); // Email or Phone helper
-            const type = 'normal'; // Default new inline clients to normal
+        setIsSubmitting(true);
+        try {
+            const formData = new FormData(e.target);
+            const clientIdRaw = formData.get('clientId');
+            let finalClientId = clientIdRaw;
             
-            const street = formData.get('newClientStreet');
-            const colony = formData.get('newClientColony');
-            const utf8Zip = formData.get('newClientZip');
-            const state = formData.get('newClientState');
-            const phone = formData.get('newClientPhone');
+            // Inline Client Creation
+            if (clientIdRaw === 'new') {
+                const name = formData.get('newClientName');
+                const contact = formData.get('newClientContact'); // Email or Phone helper
+                const type = 'normal'; // Default new inline clients to normal
+                
+                const street = formData.get('newClientStreet');
+                const colony = formData.get('newClientColony');
+                const utf8Zip = formData.get('newClientZip');
+                const state = formData.get('newClientState');
+                const phone = formData.get('newClientPhone');
 
-            const fullAddress = `${street}, Col. ${colony}, ${utf8Zip}, ${state}`;
+                const fullAddress = `${street}, Col. ${colony}, ${utf8Zip}, ${state}`;
 
-            const newClient = await addClient({ 
-                name, 
-                email: contact, // Keeping email as contact for legacy, but we have phone now
-                phone,
-                type, 
-                address: fullAddress,
-                street, colony, zip: utf8Zip, state
-            }); 
-            finalClientId = newClient.id;
-        }
-        
-        // Validations
-        const advance = parseFloat(formData.get('advance') || 0);
-        if (advance > orderTotal) {
-            alert('El anticipo no puede ser mayor al total del pedido.');
-            return;
-        }
+                const newClient = await addClient({ 
+                    name, 
+                    email: contact, // Keeping email as contact for legacy, but we have phone now
+                    phone,
+                    type, 
+                    address: fullAddress,
+                    street, colony, zip: utf8Zip, state
+                }); 
+                finalClientId = newClient.id;
+            }
+            
+            // Validations
+            const advance = parseFloat(formData.get('advance') || 0);
+            if (advance > orderTotal) {
+                alert('El anticipo no puede ser mayor al total del pedido.');
+                setIsSubmitting(false); // Manually reset as we return early
+                return;
+            }
 
-        // Common Data
-        const orderData = {
-            clientId: finalClientId,
-            items: orderItems.map(item => ({ ...item, price: parseFloat(item.price).toFixed(2) })),
-            total: orderTotal.toFixed(2),
-            advance: advance.toFixed(2),
-            remaining: (orderTotal - advance).toFixed(2),
-            deliveryLocation: formData.get('delivery'),
-            status: 'pedido', // Default, logic in context preserves or overwrites
-            date: new Date().toLocaleDateString('es-MX'),
-            deadline: formData.get('deadline') // New Field
-        };
+            // Common Data
+            const orderData = {
+                clientId: finalClientId,
+                items: orderItems.map(item => ({ ...item, price: parseFloat(item.price).toFixed(2) })),
+                total: orderTotal.toFixed(2),
+                advance: advance.toFixed(2),
+                remaining: (orderTotal - advance).toFixed(2),
+                deliveryLocation: formData.get('delivery'),
+                status: 'pedido', // Default, logic in context preserves or overwrites
+                date: new Date().toLocaleDateString('es-MX'),
+                deadline: formData.get('deadline') // New Field
+            };
 
-        if (editingOrderId) {
-            // Update Existing
-            await updateOrder(editingOrderId, {
-                ...orderData,
-                status: orders.find(o => o.id === editingOrderId)?.status // Preserve status
-            });
-            alert('Pedido actualizado');
-        } else {
-            // Create New
-            await addOrder(orderData);
+            let targetOrderId = editingOrderId;
+
+            if (editingOrderId) {
+                // Update Existing
+                await updateOrder(editingOrderId, {
+                    ...orderData,
+                    status: orders.find(o => o.id === editingOrderId)?.status // Preserve status
+                });
+                alert('Pedido actualizado');
+            } else {
+                // Create New
+                const newOrder = await addOrder(orderData);
+                targetOrderId = newOrder.id;
+            }
+
+        // Handle Image Upload from Form
+        const imageFile = formData.get('orderImage');
+        if (imageFile && imageFile.size > 0) {
+            try {
+                 const options = {
+                    maxSizeMB: 1, 
+                    maxWidthOrHeight: 1920,
+                    useWebWorker: true,
+                    fileType: 'image/webp'
+                };
+                const compressedFile = await imageCompression(imageFile, options);
+                
+                // Upload
+                const fileRef = ref(storage, `orders/${targetOrderId}/${Date.now()}_${imageFile.name}`);
+                await uploadBytes(fileRef, compressedFile);
+                const downloadURL = await getDownloadURL(fileRef);
+
+                // Update Order with Image
+                await updateOrder(targetOrderId, { progressImage: downloadURL });
+
+            } catch (err) {
+                console.error("Error uploading form image:", err);
+                alert("El pedido se guardó pero hubo un error subiendo la imagen.");
+            }
         }
         
         setNewOrderModal(false);
         setEditingOrderId(null);
         setOrderItems([{ desc: '', qty: 1, price: 0 }]); // Reset
+
+        } catch (error) {
+            console.error("Error saving order:", error);
+            alert("Error al guardar pedido: " + error.message);
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleEditOrder = (order) => {
@@ -528,8 +577,7 @@ const AdminDashboard = () => {
                                     <tr>
                                         <th className="p-4">ID</th>
                                         <th className="p-4">Cliente</th>
-                                        <th className="p-4">Entrega</th>
-                                        <th className="p-4">Entrega</th>
+                                        <th className="p-4 text-center">Arts.</th>
                                         <th className="p-4">Fecha Entrega</th>
                                         <th className="p-4">Restante</th>
                                         <th className="p-4">Estatus</th>
@@ -545,7 +593,16 @@ const AdminDashboard = () => {
                                                 {order.client || clients.find(c => c.id === order.clientId)?.name || 'Unknown'}
                                                 <div className="text-xs text-slate-500 max-w-[150px] truncate">{order.deliveryLocation || 'Sin ubicación'}</div>
                                             </td>
-                                            <td className="p-4 text-sm font-bold text-center">{order.items ? order.items.length : 1}</td>
+                                            <td className="p-4 text-center">
+                                                <div className="font-bold text-sm mb-1">{order.items ? order.items.length : 1}</div>
+                                                <div className="flex flex-col gap-1 max-w-[200px] mx-auto">
+                                                    {order.items && order.items.map((item, idx) => (
+                                                        <span key={idx} className="text-[10px] text-slate-400 leading-tight truncate">
+                                                            {item.qty}x {item.desc}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </td>
                                             <td className="p-4 text-sm text-slate-400">{order.deadline || 'Pendiente'}</td>
                                             <td className="p-4 text-brand-orange font-bold">${order.remaining}</td>
                                             <td className="p-4">
@@ -553,12 +610,12 @@ const AdminDashboard = () => {
                                                     <select 
                                                         value={order.status} 
                                                         onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                                                        className="bg-slate-900 border border-slate-600 rounded text-xs p-1 w-full"
+                                                        className={`border rounded text-xs p-2 w-full font-bold ${getStatusColor(order.status)}`}
                                                     >
-                                                        <option value="pedido">Pedido</option>
-                                                        <option value="proceso">En Proceso</option>
-                                                        <option value="terminado">Terminado</option>
-                                                        <option value="entregado">Entregado</option>
+                                                        <option value="pedido" className="bg-slate-900 text-slate-300">Pedido</option>
+                                                        <option value="proceso" className="bg-slate-900 text-slate-300">En Proceso</option>
+                                                        <option value="terminado" className="bg-slate-900 text-slate-300">Terminado</option>
+                                                        <option value="entregado" className="bg-slate-900 text-slate-300">Entregado</option>
                                                     </select>
                                                 </div>
                                             </td>
@@ -827,6 +884,15 @@ const AdminDashboard = () => {
                                                 className="w-32 bg-black/50 border border-slate-700 rounded p-1 text-right text-sm" 
                                             />
                                         </div>
+                                         <div className="flex justify-between items-center mt-2 pt-2 border-t border-slate-700">
+                                            <span className="text-xs text-gray-400">Evidencia:</span>
+                                            <input 
+                                                name="orderImage" 
+                                                type="file" 
+                                                accept="image/*"
+                                                className="w-32 text-xs text-slate-500 file:py-1 file:px-2 file:rounded-full file:border-0 file:text-xs file:bg-brand-blue file:text-white hover:file:bg-blue-600"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                                 <div>
@@ -844,9 +910,28 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="flex justify-end gap-3 mt-6 border-t border-slate-700 pt-4">
-                            <button type="button" onClick={() => setNewOrderModal(false)} className="text-slate-400">Cancelar</button>
-                            <button type="submit" className="bg-brand-blue px-6 py-2 rounded font-bold hover:bg-blue-600">
-                                {editingOrderId ? 'Actualizar Pedido' : 'Crear Pedido'} (${orderTotal.toFixed(2)})
+                            <button 
+                                type="button" 
+                                onClick={() => setNewOrderModal(false)} 
+                                className="text-slate-400 hover:text-white"
+                                disabled={isSubmitting}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                type="submit" 
+                                className={`px-6 py-2 rounded font-bold text-white transition-all flex items-center gap-2
+                                    ${isSubmitting ? 'bg-slate-600 cursor-not-allowed' : 'bg-brand-blue hover:bg-blue-600'}`}
+                                disabled={isSubmitting}
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                        Guardando...
+                                    </>
+                                ) : (
+                                    `${editingOrderId ? 'Actualizar Pedido' : 'Crear Pedido'} ($${orderTotal.toFixed(2)})`
+                                )}
                             </button>
                         </div>
                     </form>
