@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { db } from '../firebase';
+import { db, auth } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
+import { signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
 const DataContext = createContext();
 
@@ -11,6 +12,7 @@ export const DataProvider = ({ children }) => {
     const [clients, setClients] = useState([]);
     const [orders, setOrders] = useState([]);
     const [leads, setLeads] = useState([]);
+    const [user, setUser] = useState(null);
 
     // Collections References
     const clientsCollection = collection(db, 'clients');
@@ -19,23 +21,37 @@ export const DataProvider = ({ children }) => {
 
     // Init Logic - Realtime Listeners
     useEffect(() => {
-        const unsubClients = onSnapshot(clientsCollection, (snapshot) => {
-            setClients(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        // 1. Sign In Anonymously
+        const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                console.log("Firebase Auth: Signed in as", currentUser.uid);
+                setUser(currentUser);
+                
+                // 2. Start Listeners ONLY after auth
+                const unsubClients = onSnapshot(clientsCollection, (snapshot) => {
+                    setClients(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+                }, (error) => console.error("Error reading clients:", error));
+
+                const unsubOrders = onSnapshot(ordersCollection, (snapshot) => {
+                    setOrders(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+                }, (error) => console.error("Error reading orders:", error));
+
+                const unsubLeads = onSnapshot(leadsCollection, (snapshot) => {
+                    setLeads(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+                }, (error) => console.error("Error reading leads:", error));
+
+                return () => {
+                    unsubClients();
+                    unsubOrders();
+                    unsubLeads();
+                };
+            } else {
+                console.log("Firebase Auth: Signing in...");
+                signInAnonymously(auth).catch((error) => console.error("Auth Failed:", error));
+            }
         });
 
-        const unsubOrders = onSnapshot(ordersCollection, (snapshot) => {
-            setOrders(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-        });
-
-        const unsubLeads = onSnapshot(leadsCollection, (snapshot) => {
-            setLeads(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-        });
-
-        return () => {
-            unsubClients();
-            unsubOrders();
-            unsubLeads();
-        };
+        return () => unsubAuth();
     }, []);
 
     // --- Actions ---
