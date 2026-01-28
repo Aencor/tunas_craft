@@ -70,7 +70,6 @@ const StoreSale = () => {
             advance: total.toFixed(2), // Fully paid
             deliveryLocation: 'Entregado en Tienda',
             status: 'entregado',
-            status: 'entregado',
             date: new Date().toLocaleDateString('es-MX'),
             deadline: deadline || new Date().toISOString().split('T')[0] // Default to today if empty
         });

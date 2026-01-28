@@ -11,7 +11,7 @@ const AdminDashboard = () => {
     const { 
         clients, orders, leads, user, loadingAuth, login, logout, 
         addClient, updateClient, 
-        addOrder, updateOrder, deleteOrder,
+        addOrder, updateOrder, updateOrderStatus, deleteOrder,
         addLead, updateLead, deleteLead
     } = useData();
 
