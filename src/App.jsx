@@ -8,7 +8,7 @@ import OrderStatus from './pages/OrderStatus';
 
 function App() {
   return (
-    <Router basename="/tunas_craft">
+    <Router>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/admin" element={<AdminDashboard />} />
