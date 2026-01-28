@@ -2,19 +2,15 @@ import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { ArrowLeft, Upload, FileText, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { signInAnonymously } from 'firebase/auth';
-import { auth, storage } from '../firebase';
+
 
 const Quote = () => {
     const { addLead } = useData();
     const [formData, setFormData] = useState({
         name: '', email: '', phone: '',
         quantity: 1, details: '',
-        refType: 'link', refLink: ''
     });
 
-    const [imageFile, setImageFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
 
@@ -23,10 +19,6 @@ const Quote = () => {
         setFormData(prev => ({ ...prev, [id]: value }));
     };
 
-    const handleRadio = (e) => {
-        setFormData(prev => ({ ...prev, refType: e.target.value }));
-    }
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (isSubmitting) return;
@@ -34,26 +26,10 @@ const Quote = () => {
         setIsSubmitting(true);
 
         try {
-            // Ensure auth for storage/firestore rules
-            if (!auth.currentUser) {
-                console.log("Signing in anonymously...");
-                await signInAnonymously(auth);
-            }
-
-            let imageUrl = '';
-            
-            // Upload Image if present
-            if (formData.refType === 'image' && imageFile) {
-                const storageRef = ref(storage, `quotes/${Date.now()}_${imageFile.name}`);
-                await uploadBytes(storageRef, imageFile);
-                imageUrl = await getDownloadURL(storageRef);
-            }
-
             // Save to DataContext (Lead)
-            // Note: We might want to save the imageUrl in the lead too, but for now just WhatsApp
             const newItem = addLead({
                 ...formData,
-                imageUrl: imageUrl || null
+                imageUrl: null
             });
 
             // WhatsApp Logic
@@ -62,14 +38,6 @@ const Quote = () => {
             message += `📧 *Correo:* ${formData.email}\n`;
             if(formData.phone) message += `📞 *Teléfono:* ${formData.phone}\n`;
             message += `🔢 *Piezas:* ${formData.quantity}\n`;
-            
-            if (formData.refType === 'link' && formData.refLink) {
-                message += `🔗 *Referencia:* ${formData.refLink}\n`;
-            } else if (imageUrl) {
-                message += `🖼 *Imagen Referencia:* ${imageUrl}\n`;
-            } else {
-                message += `🖼 *Referencia:* (Sin referencia adjunta)\n`;
-            }
             
             if(formData.details) message += `📝 *Detalles:* ${formData.details}\n`;
             
@@ -84,9 +52,7 @@ const Quote = () => {
             setFormData({
                 name: '', email: '', phone: '',
                 quantity: 1, details: '',
-                refType: 'link', refLink: ''
             });
-            setImageFile(null);
 
         } catch (error) {
             console.error("Error submitting quote:", error);
@@ -145,58 +111,7 @@ const Quote = () => {
                             <input type="number" id="quantity" min="1" required value={formData.quantity} onChange={handleChange} className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-blue transition-all" />
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-3">¿Tienes una referencia?</label>
-                            <div className="flex gap-4 mb-4">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="refType" 
-                                        value="link" 
-                                        checked={formData.refType === 'link'} 
-                                        onChange={handleRadio} 
-                                        className="text-brand-blue accent-brand-orange w-5 h-5" 
-                                    />
-                                    <span>Enlace (Link)</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input 
-                                        type="radio" 
-                                        name="refType" 
-                                        value="image" 
-                                        checked={formData.refType === 'image'} 
-                                        onChange={handleRadio} 
-                                        className="text-brand-blue accent-brand-orange w-5 h-5" 
-                                    />
-                                    <span>Imagen</span>
-                                </label>
-                            </div>
-
-                            {formData.refType === 'link' ? (
-                                <input type="url" id="refLink" value={formData.refLink} onChange={handleChange} className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-blue transition-all" placeholder="https://..." />
-                            ) : (
-                                <div className="border-2 border-dashed border-white/20 rounded-xl p-6 text-center text-gray-400 hover:border-brand-orange/50 transition-colors relative">
-                                    <input 
-                                        type="file" 
-                                        accept="image/*" 
-                                        onChange={(e) => setImageFile(e.target.files[0])}
-                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                    />
-                                    {imageFile ? (
-                                        <div className="flex flex-col items-center">
-                                            <FileText className="text-brand-orange mb-2" />
-                                            <span className="text-white font-medium">{imageFile.name}</span>
-                                            <span className="text-xs text-green-400 mt-1">Listo para subir</span>
-                                        </div>
-                                    ) : (
-                                        <>
-                                            <Upload className="mx-auto mb-2" />
-                                            <span className="text-sm">Toca para seleccionar una imagen</span>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                        {/* Reference Section Removed */}
 
                         <div>
                             <label className="block text-sm font-medium text-gray-300 mb-2">Detalles Adicionales</label>
