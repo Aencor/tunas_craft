@@ -55,17 +55,17 @@ const OrderStatus = () => {
     };
 
     return (
-        <div className="min-h-screen bg-brand-dark text-slate-100 font-sans flex flex-col items-center justify-center p-4">
-             <div className="absolute top-8 left-8">
-                <Link to="/" className="text-gray-400 hover:text-white">&larr; Volver</Link>
+        <div className="min-h-screen bg-brand-dark text-slate-100 font-sans flex flex-col items-center p-6 md:justify-center">
+             <div className="w-full max-w-2xl mb-8 flex justify-start">
+                <Link to="/" className="text-gray-400 hover:text-white flex items-center gap-2">&larr; Volver</Link>
              </div>
 
              <div className="w-full max-w-2xl">
                 <h1 className="text-3xl font-display font-bold text-center mb-2">Revisa estatus de tu <span className="text-brand-orange">Pedido</span></h1>
                 <p className="text-center text-gray-400 mb-8">Ingresa tu ID de pedido, correo o teléfono.</p>
 
-                <div className="glass p-8 rounded-2xl shadow-xl border border-white/10 mb-8">
-                    <form onSubmit={handleSearch} className="flex gap-4">
+                <div className="glass p-6 md:p-8 rounded-2xl shadow-xl border border-white/10 mb-8">
+                    <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4">
                         <input 
                             type="text" 
                             required
@@ -74,7 +74,7 @@ const OrderStatus = () => {
                             className="flex-1 bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
                             placeholder="ID, Correo o Teléfono..."
                         />
-                        <button type="submit" className="bg-brand-blue hover:bg-blue-600 text-white font-bold px-6 py-3 rounded-lg transition-all flex items-center gap-2">
+                        <button type="submit" className="bg-brand-blue hover:bg-blue-600 text-white font-bold px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2 w-full md:w-auto">
                            <Search size={18} /> Buscar
                         </button>
                     </form>
