@@ -7,6 +7,7 @@ import imageCompression from 'browser-image-compression';
 import { storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import PriceCalculator from '../components/PriceCalculator';
+// Toast removed per user request
 
 const AdminDashboard = () => {
     const { 
@@ -45,6 +46,7 @@ const AdminDashboard = () => {
     const [detailsModal, setDetailsModal] = useState(null); // { type: 'order' | 'quote', data: object }
     const [editClientModal, setEditClientModal] = useState(null); // { client }
     const [clientHistoryModal, setClientHistoryModal] = useState(null); // { client }
+
     
     // New Order State
     const [orderItems, setOrderItems] = useState([{ desc: '', qty: 1, price: 0 }]);
@@ -210,7 +212,7 @@ const AdminDashboard = () => {
             try { 
                 importDatabase(JSON.parse(event.target.result)); 
                 alert('Base de datos importada.');
-            } catch(err) { alert('Error JSON'); }
+            } catch(err) { alert('Error al procesar el archivo JSON'); }
         };
         reader.readAsText(file);
     };
@@ -225,10 +227,8 @@ const AdminDashboard = () => {
             method: data.get('method')
         });
         e.target.reset();
-        alert('Gasto registrado');
+        alert('Gasto registrado exitosamente');
     };
-
-
 
     const handleCreateClient = (e) => {
         e.preventDefault();
@@ -306,6 +306,7 @@ const AdminDashboard = () => {
 
         try {
             addLead(newLeadData);
+            setNewLeadModal(false);
             setNewLeadModal(false);
             alert('Cotización creada correctamente');
         } catch (error) {
@@ -497,7 +498,7 @@ const AdminDashboard = () => {
                     ...orderData,
                     status: orders.find(o => o.id === editingOrderId)?.status // Preserve status
                 });
-                alert('Pedido actualizado');
+                alert('Pedido actualizado correctamente');
             } else {
                 // Create New
                 const newOrder = await addOrder(orderData);
@@ -619,7 +620,7 @@ Saludos, Tuna's Craft 🌵`;
     const paginatedLeads = filteredLeads.slice(leadsPage * LEADS_PER_PAGE, (leadsPage + 1) * LEADS_PER_PAGE);
 
     return (
-        <div className="flex h-screen bg-slate-900 text-slate-100 font-sans overflow-hidden relative">
+        <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-slate-900 text-slate-100 font-sans md:overflow-hidden relative">
              
              {/* Mobile Sidebar Toggle */}
              <button 
@@ -667,12 +668,13 @@ Saludos, Tuna's Craft 🌵`;
              </aside>
 
              {/* Main Content */}
-             <main className="flex-1 overflow-y-auto p-8 relative">
+             {/* Adjusted padding: reduced md:p-8 to md:px-8 md:py-4 to reduce visual gap between sidebar and content */}
+             <main className="flex-1 md:overflow-y-auto px-6 py-4 md:py-8 md:px-8 relative">
                  
                  {/* Dashboard */}
                  {activeTab === 'dashboard' && (
                      <div className="space-y-6">
-                         <h2 className="text-3xl font-display font-bold md:ml-0 ml-12">Resumen</h2>
+                         <h2 className="text-3xl font-display font-bold">Resumen</h2>
                          
                          {/* KPIs */}
                          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -695,7 +697,7 @@ Saludos, Tuna's Craft 🌵`;
                  {activeTab === 'orders' && (
                      <div>
                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                            <h2 className="text-3xl font-display font-bold md:ml-0 ml-12">Pedidos</h2>
+                            <h2 className="text-3xl font-display font-bold">Pedidos</h2>
                             <div className="flex flex-col md:flex-row gap-3 w-full md:w-auto">
                                 <Link to="/venta-tienda" className="bg-brand-orange hover:bg-orange-600 px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors">
                                     <ShoppingBag size={18} /> Venta Mostrador
@@ -970,7 +972,7 @@ Saludos, Tuna's Craft 🌵`;
                  {activeTab === 'leads' && (
                      <div>
                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                             <h2 className="text-3xl font-display font-bold md:ml-0 ml-12">Cotizaciones</h2>
+                             <h2 className="text-3xl font-display font-bold">Cotizaciones</h2>
                              <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
                                  <button onClick={() => setNewLeadModal(true)} className="bg-brand-blue hover:bg-blue-600 px-3 py-2 rounded-lg font-bold flex items-center justify-center gap-2 text-sm">
                                      <Plus size={16} /> Nueva
@@ -1026,7 +1028,7 @@ Saludos, Tuna's Craft 🌵`;
                  {/* Expenses */}
                  {activeTab === 'expenses' && (
                     <div className="space-y-6">
-                        <h2 className="text-3xl font-display font-bold md:ml-0 ml-12">Gastos</h2>
+                        <h2 className="text-3xl font-display font-bold">Gastos</h2>
                         
                         {/* Expense Form */}
                         <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
@@ -1144,6 +1146,13 @@ Saludos, Tuna's Craft 🌵`;
                             </table>
                         </div>
                     </div>
+                 )}
+                 {/* Calculator Tab */}
+                 {activeTab === 'calculator' && (
+                     <div>
+                          <h2 className="text-3xl font-display font-bold mb-6">Cotizador 3D</h2>
+                          <PriceCalculator />
+                     </div>
                  )}
              </main>
 
@@ -1743,13 +1752,8 @@ Saludos, Tuna's Craft 🌵`;
             )}
 
 
-            {/* Calculator Tab */}
-            {activeTab === 'calculator' && (
-                <div>
-                     <h2 className="text-3xl font-display font-bold mb-6">Cotizador 3D</h2>
-                     <PriceCalculator />
-                </div>
-            )}
+
+
         </div>
     );
 };
