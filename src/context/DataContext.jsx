@@ -13,6 +13,7 @@ export const DataProvider = ({ children }) => {
     const [orders, setOrders] = useState([]);
     const [leads, setLeads] = useState([]);
     const [expenses, setExpenses] = useState([]);
+    const [quotes, setQuotes] = useState([]);
     const [user, setUser] = useState(null);
     const [loadingAuth, setLoadingAuth] = useState(true);
 
@@ -21,6 +22,7 @@ export const DataProvider = ({ children }) => {
     const ordersCollection = collection(db, 'orders');
     const leadsCollection = collection(db, 'leads');
     const expensesCollection = collection(db, 'expenses');
+    const quotesCollection = collection(db, 'saved_quotes');
 
     // Auth & Listeners
     useEffect(() => {
@@ -42,12 +44,16 @@ export const DataProvider = ({ children }) => {
                 const unsubExpenses = onSnapshot(expensesCollection, (snapshot) => {
                     setExpenses(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
                 });
+                const unsubQuotes = onSnapshot(quotesCollection, (snapshot) => {
+                    setQuotes(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+                });
 
                 return () => {
                     unsubClients();
                     unsubOrders();
                     unsubLeads();
                     unsubExpenses();
+                    unsubQuotes();
                 };
             } else {
                 // Clear state on logout
@@ -55,6 +61,7 @@ export const DataProvider = ({ children }) => {
                 setOrders([]);
                 setLeads([]);
                 setExpenses([]);
+                setQuotes([]);
             }
         });
 
@@ -203,6 +210,26 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    // SAVED QUOTES
+    const addQuote = async (quote) => {
+        const newQuote = {
+            ...quote,
+            date: new Date().toISOString()
+        };
+        const docRef = await addDoc(quotesCollection, newQuote);
+        return { ...newQuote, id: docRef.id };
+    };
+
+    const deleteQuote = async (id) => {
+        try {
+            const docRef = doc(db, 'saved_quotes', id);
+            await deleteDoc(docRef);
+        } catch (error) {
+            console.error("Error deleting quote:", error);
+            alert(`Error al eliminar cotización: ${error.code} - ${error.message}`);
+        }
+    };
+
     // BULK IMPORT (Optional implementation for Firebase)
     const importDatabase = async (data) => {
         // Note: This would be expensive in valid reads/writes, implementing naive version
@@ -219,6 +246,7 @@ export const DataProvider = ({ children }) => {
             addOrder, updateOrderStatus, updateOrder, deleteOrder,
             addLead, updateLeadStatus,
             expenses, addExpense, deleteExpense,
+            quotes, addQuote, deleteQuote,
             importDatabase
         }}>
             {children}

@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import SalesChart from '../components/SalesChart';
-import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown, CreditCard, ArrowUp, ArrowDown } from 'lucide-react';
+import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown, CreditCard, ArrowUp, ArrowDown, Calculator } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import { storage } from '../firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import PriceCalculator from '../components/PriceCalculator';
 
 const AdminDashboard = () => {
     const { 
@@ -649,6 +650,7 @@ Saludos, Tuna's Craft 🌵`;
                     <NavBtn id="leads" icon={<FileText />} label="Cotizaciones" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="clients" icon={<Users />} label="Clientes" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="expenses" icon={<CreditCard />} label="Gastos" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
+                    <NavBtn id="calculator" icon={<Calculator />} label="Cotizador 3D" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                 </nav>
                 <div className="mt-auto pt-6 border-t border-slate-700 space-y-2">
                     <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white px-2">
@@ -1741,6 +1743,13 @@ Saludos, Tuna's Craft 🌵`;
             )}
 
 
+            {/* Calculator Tab */}
+            {activeTab === 'calculator' && (
+                <div>
+                     <h2 className="text-3xl font-display font-bold mb-6">Cotizador 3D</h2>
+                     <PriceCalculator />
+                </div>
+            )}
         </div>
     );
 };
