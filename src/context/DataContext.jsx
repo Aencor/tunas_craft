@@ -145,7 +145,11 @@ export const DataProvider = ({ children }) => {
         };
 
         const docRef = await addDoc(ordersCollection, newOrder);
-        return { ...newOrder, id: docRef.id };
+        // Add shortId derived from the auto-generated ID
+        const shortId = docRef.id.slice(-4);
+        await updateDoc(docRef, { shortId });
+        
+        return { ...newOrder, id: docRef.id, shortId };
     };
 
     const updateOrderStatus = async (id, status) => {

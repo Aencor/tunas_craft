@@ -217,6 +217,23 @@ const AdminDashboard = () => {
         reader.readAsText(file);
     };
 
+    const handleGenerateShortIds = async () => {
+        if(!confirm('¿Generar IDs cortos para todos los pedidos? Esto es necesario para la búsqueda pública.')) return;
+        
+        let count = 0;
+        for (const order of orders) {
+            // Update all to ensure consistency
+            const shortId = order.id.slice(-4); 
+            try {
+                await updateOrder(order.id, { shortId });
+                count++;
+            } catch (err) {
+                console.error("Error updating order", order.id, err);
+            }
+        }
+        alert(`Se actualizaron ${count} pedidos con Short ID.`);
+    };
+
     const handleSubmitExpense = (e) => {
         e.preventDefault();
         const data = new FormData(e.target);
@@ -661,6 +678,9 @@ Saludos, Tuna's Craft 🌵`;
                         <Upload size={14} /> Importar DB
                         <input type="file" className="hidden" accept=".json" onChange={handleImport} />
                     </label>
+                    <button onClick={handleGenerateShortIds} className="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded text-center items-center justify-center flex cursor-pointer gap-2 text-sm text-brand-orange">
+                        <Upload size={14} /> Reparar DB (Short IDs)
+                    </button>
                     <button onClick={logout} className="w-full bg-red-900/30 hover:bg-red-900/50 text-red-200 p-2 rounded flex items-center justify-center gap-2 text-sm transition-colors">
                         <Trash2 size={14} /> Cerrar Sesión
                     </button>

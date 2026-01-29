@@ -1,58 +1,101 @@
 import React, { useState } from 'react';
-import { useData } from '../context/DataContext';
+// import { useData } from '../context/DataContext'; // Removed dependency
+import { db } from '../firebase';
+import { collection, query as queryFirestore, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { Search, Package, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const OrderStatus = () => {
-    const { clients, orders } = useData();
+    // Remove global data dependency for public search
+    // const { clients, orders } = useData(); 
     const [query, setQuery] = useState('');
     const [results, setResults] = useState(null);
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleSearch = (e) => {
+    const handleSearch = async (e) => {
         e.preventDefault();
         setError('');
         setResults(null); 
+        setLoading(true);
 
-        const term = query.trim().replace(/^#/, '').toLowerCase();
-        if (!term) return;
-
-        // Strategy 1: Match Order ID directly
-        // Support partial match for ID or full match? Usually specific status check needs ID.
-        // Let's assume strict ID match or at least "ends with" for easier use?
-        // User asked: "pone id del pedido o correo... y le arroje los pedidos"
+        // Keep original case for ID search (Firestore IDs are case-sensitive)
+        const termOriginal = query.trim().replace(/^#/, '');
+        const termLower = termOriginal.toLowerCase();
         
-        let foundOrders = [];
-
-
-
-        // Check 1: Match Order ID directly (Exact or EndsWith for short IDs)
-        // Fix: Firestore IDs are mixed-case. We must compare case-insensitively.
-        const orderById = orders.find(o => {
-            const idLower = o.id.toString().toLowerCase();
-            return idLower === term || idLower.endsWith(term);
-        });
-        if (orderById) {
-            foundOrders.push(orderById);
-        } else {
-            // Check 2: Match Client (ID, Email, or Phone) -> Get All Orders
-            const client = clients.find(c => 
-                c.id.toLowerCase() === term || // Match Client ID directly
-                (c.email && c.email.toLowerCase() === term) ||
-                (c.phone && c.phone.replace(/\D/g, '') === term.replace(/\D/g, ''))
-            );
-
-            if (client) {
-                // Ensure strict string comparison for IDs to avoid mismatch
-                foundOrders = orders.filter(o => String(o.clientId) === String(client.id));
-            }
+        if (!termOriginal) {
+             setLoading(false);
+             return;
         }
 
-        if (foundOrders.length > 0) {
-            // Sort by date desc (assuming higher ID is newer or date field)
-             setResults(foundOrders.reverse());
-        } else {
-            setError('No se encontraron pedidos con esa información. Verifica el ID o Correo.');
+        try {
+            let foundOrders = [];
+
+            // Strategy:
+            // 1. Try to find by Client (Email/Phone) using lowercase/normalized term
+            // 2. Try to find by Order ID using original term (Exact Match)
+            
+            const clientsRef = collection(db, 'clients');
+            const ordersRef = collection(db, 'orders');
+
+            // 1. Client Search (Email / Phone)
+            // Note: Phone usually stored as string. We assume normalized in DB or simple match.
+            const qEmail = queryFirestore(clientsRef, where('email', '==', termLower)); 
+            const qPhone = queryFirestore(clientsRef, where('phone', '==', termOriginal)); // Phone might strictly match input?
+            // Fallback for phone: try simple formats if needed, but let's stick to input.
+
+            const [emailSnap, phoneSnap] = await Promise.all([
+                 getDocs(qEmail),
+                 getDocs(qPhone)
+            ]);
+
+            let clientIds = new Set();
+            emailSnap.forEach(doc => clientIds.add(doc.id));
+            phoneSnap.forEach(doc => clientIds.add(doc.id));
+
+            if (clientIds.size > 0) {
+                const idsArray = Array.from(clientIds);
+                // Chunking would be needed if > 10, assuming small batch for now
+                const qClientOrders = queryFirestore(ordersRef, where('clientId', 'in', idsArray));
+                const ordersSnap = await getDocs(qClientOrders);
+                ordersSnap.forEach(doc => {
+                    foundOrders.push({ id: doc.id, ...doc.data() });
+                });
+            }
+
+            // 2. Direct Order ID Search
+            // Only perform if we haven't found anything or to allow direct ID lookup explicitly
+            // We use termOriginal because Firestore IDs are mixed case.
+            if (foundOrders.length === 0) {
+                 // 2a. Try Full ID
+                 const docRef = doc(db, 'orders', termOriginal);
+                 const docSnap = await getDoc(docRef);
+                 
+                 if (docSnap.exists()) {
+                     foundOrders.push({ id: docSnap.id, ...docSnap.data() });
+                 } else {
+                     // 2b. Try Short ID (last 4 chars)
+                     // Now that we have a 'shortId' field, we can query it.
+                     const qShort = queryFirestore(ordersRef, where('shortId', '==', termOriginal));
+                     const shortSnap = await getDocs(qShort);
+                     shortSnap.forEach(doc => {
+                         foundOrders.push({ id: doc.id, ...doc.data() });
+                     });
+                 }
+            }
+
+            if (foundOrders.length > 0) {
+                 // Sort by date?
+                 setResults(foundOrders.reverse());
+            } else {
+                setError('No se encontraron pedidos. Verifica ID (completo o últimos 4), Correo o Teléfono. Si tu pedido es antiguo, contacta a soporte.');
+            }
+
+        } catch (err) {
+            console.error("Search error:", err);
+            setError("Error al buscar. Verifica tu conexión o intenta nuevamente.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -76,8 +119,13 @@ const OrderStatus = () => {
                             className="flex-1 bg-black/30 border border-white/10 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-brand-blue"
                             placeholder="ID, Correo o Teléfono..."
                         />
-                        <button type="submit" className="bg-brand-blue hover:bg-blue-600 text-white font-bold px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2 w-full md:w-auto">
-                           <Search size={18} /> Buscar
+                        <button 
+                            type="submit" 
+                            disabled={loading}
+                            className="bg-brand-blue hover:bg-blue-600 text-white font-bold px-6 py-3 rounded-lg transition-all flex items-center justify-center gap-2 w-full md:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                           {loading ? <span className="animate-spin h-4 w-4 border-2 border-white rounded-full border-t-transparent"></span> : <Search size={18} />} 
+                           {loading ? 'Buscando...' : 'Buscar'}
                         </button>
                     </form>
 
