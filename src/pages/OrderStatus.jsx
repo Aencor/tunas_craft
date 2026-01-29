@@ -14,7 +14,7 @@ const OrderStatus = () => {
         setError('');
         setResults(null); 
 
-        const term = query.trim().toLowerCase();
+        const term = query.trim().replace(/^#/, '').toLowerCase();
         if (!term) return;
 
         // Strategy 1: Match Order ID directly
@@ -27,15 +27,17 @@ const OrderStatus = () => {
 
 
         // Check 1: Match Order ID directly (Exact or EndsWith for short IDs)
-        // We compare strings. unique ID is usually long timestamp. 
-        // Admin shows slice(-4). so we should match if id.endsWith(term).
-        const orderById = orders.find(o => o.id.toString() === term || o.id.toString().endsWith(term));
+        // Fix: Firestore IDs are mixed-case. We must compare case-insensitively.
+        const orderById = orders.find(o => {
+            const idLower = o.id.toString().toLowerCase();
+            return idLower === term || idLower.endsWith(term);
+        });
         if (orderById) {
             foundOrders.push(orderById);
         } else {
             // Check 2: Match Client (ID, Email, or Phone) -> Get All Orders
             const client = clients.find(c => 
-                c.id === term || // Match Client ID directly
+                c.id.toLowerCase() === term || // Match Client ID directly
                 (c.email && c.email.toLowerCase() === term) ||
                 (c.phone && c.phone.replace(/\D/g, '') === term.replace(/\D/g, ''))
             );
@@ -50,7 +52,7 @@ const OrderStatus = () => {
             // Sort by date desc (assuming higher ID is newer or date field)
              setResults(foundOrders.reverse());
         } else {
-            setError('No se encontraron pedidos con esa información.');
+            setError('No se encontraron pedidos con esa información. Verifica el ID o Correo.');
         }
     };
 
@@ -108,10 +110,33 @@ const OrderStatus = () => {
                                 <div className="space-y-4 mb-6">
                                     {/* Items Breakdown */}
                                     <div className="bg-slate-900/50 rounded-lg p-3">
-                                        <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase">Productos</h4>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <h4 className="text-xs font-bold text-gray-400 uppercase">Productos</h4>
+                                            {/* Progress Bar */}
+                                            {order.items && (
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-24 h-2 bg-slate-700 rounded-full overflow-hidden">
+                                                        <div 
+                                                            className="h-full bg-green-500 transition-all duration-500"
+                                                            style={{ width: `${(order.items.filter(i => i.completed).length / order.items.length) * 100}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="text-[10px] text-gray-400">
+                                                        {order.items.filter(i => i.completed).length}/{order.items.length}
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
                                         {order.items && order.items.map((item, idx) => (
-                                            <div key={idx} className="flex justify-between text-sm text-slate-200 mb-1 border-b border-slate-700/50 pb-1 last:border-0 last:pb-0">
-                                                <span>{item.qty}x {item.desc}</span>
+                                            <div key={idx} className="flex justify-between items-center text-sm text-slate-200 mb-1 border-b border-slate-700/50 pb-1 last:border-0 last:pb-0">
+                                                <div className="flex items-center gap-2">
+                                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center border ${item.completed ? 'bg-green-500 border-green-500' : 'border-slate-600'}`}>
+                                                        {item.completed && <CheckCircle size={10} className="text-white" />}
+                                                    </div>
+                                                    <span className={item.completed ? 'text-gray-500 line-through' : ''}>
+                                                        {item.qty}x {item.desc}
+                                                    </span>
+                                                </div>
                                                 {item.price && <span className="text-gray-500">${item.price} c/u</span>}
                                             </div>
                                         ))}
@@ -124,10 +149,17 @@ const OrderStatus = () => {
                                                 <span className="text-green-400 font-bold">¡Entregado!</span>
                                             </>
                                         ) : (
-                                            <>
-                                                <Clock className="text-brand-orange" />
-                                                <span>Entrega estimada: {order.deadline || 'Pendiente'}</span>
-                                            </>
+                                            <div className="flex flex-col gap-1">
+                                                <div className="flex items-center gap-2">
+                                                    <Clock className="text-brand-orange" size={16} />
+                                                    <span>Entrega estimada: {order.deadline || 'Pendiente'}</span>
+                                                </div>
+                                                {order.deliveryLocation && (
+                                                    <div className="flex items-center gap-2 text-sm text-gray-400 ml-6">
+                                                        <span>📍 Zona/Dirección: {order.deliveryLocation}</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
 
@@ -136,6 +168,20 @@ const OrderStatus = () => {
                                         <div className="mt-4">
                                              <h4 className="text-xs font-bold text-gray-400 mb-2 uppercase">Avance del Pedido</h4>
                                              <img src={order.progressImage} alt="Avance" className="w-full rounded-lg border border-slate-600 shadow-lg" />
+                                        </div>
+                                    )}
+
+                                    {/* External Evidence Link */}
+                                    {order.evidenceLink && (
+                                        <div className="mt-4">
+                                            <a 
+                                                href={order.evidenceLink} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="w-full block bg-slate-800 hover:bg-slate-700 border border-slate-600 text-center py-3 rounded-xl transition-colors flex items-center justify-center gap-2 text-brand-blue font-bold"
+                                            >
+                                                <Package size={18} /> Ver Fotos / Evidencia (Drive)
+                                            </a>
                                         </div>
                                     )}
                                 </div>

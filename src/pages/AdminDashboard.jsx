@@ -283,6 +283,24 @@ const AdminDashboard = () => {
          setApprovalModal(null);
     };
 
+    const handleToggleItem = async (orderId, itemIndex) => {
+        const order = orders.find(o => o.id === orderId);
+        if (!order || !order.items) return;
+
+        const newItems = [...order.items];
+        // Toggle the 'completed' status of the specific item
+        // Ensure property exists first
+        const currentStatus = newItems[itemIndex].completed || false;
+        newItems[itemIndex] = { ...newItems[itemIndex], completed: !currentStatus };
+
+        try {
+            await updateOrder(orderId, { items: newItems });
+        } catch (error) {
+            console.error("Error toggling item:", error);
+            alert("Error al actualizar el artículo.");
+        }
+    };
+
     const handleImageUpload = async (e) => {
         const file = e.target.files[0];
         if(!file) return;
@@ -367,7 +385,8 @@ const AdminDashboard = () => {
                 deliveryLocation: formData.get('delivery'),
                 status: 'pedido', // Default, logic in context preserves or overwrites
                 date: new Date().toLocaleDateString('es-MX'),
-                deadline: formData.get('deadline') // New Field
+                deadline: formData.get('deadline'), // New Field
+                evidenceLink: formData.get('evidenceLink') // New Field
             };
 
             let targetOrderId = editingOrderId;
@@ -449,6 +468,37 @@ const AdminDashboard = () => {
         if(confirm('¿Estás seguro de eliminar este cliente?')) {
             deleteClient(id);
         }
+    };
+
+    const handleWhatsApp = (order) => {
+        const client = clients.find(c => c.id === order.clientId);
+        // Fallback to order phone if client not found, or prompt user if missing
+        const phone = client?.phone || order.phone; 
+        
+        if (!phone) {
+            alert('Este pedido no tiene un número de teléfono asociado.');
+            return;
+        }
+
+        // Clean phone number (remove non-digits)
+        const cleanPhone = phone.replace(/\D/g, '');
+        
+        // E.g. https://tunas-craft.com/estatus -> updated to /status as requested
+        const statusLink = `${window.location.origin}/status`; 
+        
+        const itemsList = order.items.map(i => `- ${i.qty}x ${i.desc}`).join('\n');
+
+        const message = `Hola ${client?.name || 'Cliente'}, tu pedido #${order.id.slice(-4)} tiene un estatus de *${order.status}*.
+
+Resumen:
+${itemsList}
+        
+Puedes revisar el avance y detalles aquí: ${statusLink}
+        
+Saludos, Tuna's Craft 🌵`;
+
+        const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
     };
 
     // Derived State for Dashboard
@@ -597,9 +647,18 @@ const AdminDashboard = () => {
                                                 <div className="font-bold text-sm mb-1">{order.items ? order.items.length : 1}</div>
                                                 <div className="flex flex-col gap-1 max-w-[200px] mx-auto">
                                                     {order.items && order.items.map((item, idx) => (
-                                                        <span key={idx} className="text-[10px] text-slate-400 leading-tight truncate">
-                                                            {item.qty}x {item.desc}
-                                                        </span>
+                                                        <div key={idx} className="flex items-center gap-2 mb-1">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={item.completed || false} 
+                                                                onChange={() => handleToggleItem(order.id, idx)}
+                                                                className="cursor-pointer rounded border-slate-600 bg-slate-700 text-brand-blue focus:ring-brand-blue"
+                                                                title="Marcar como listo"
+                                                            />
+                                                            <span className={`text-[10px] leading-tight truncate ${item.completed ? 'text-green-400 line-through decoration-green-400/50' : 'text-slate-400'}`}>
+                                                                {item.qty}x {item.desc}
+                                                            </span>
+                                                        </div>
                                                     ))}
                                                 </div>
                                             </td>
@@ -642,6 +701,13 @@ const AdminDashboard = () => {
                                                         title="Subir Foto"
                                                     >
                                                         <Upload size={18} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleWhatsApp(order)}
+                                                        className="p-2 text-green-400 hover:bg-green-400/20 rounded-full transition-colors"
+                                                        title="Enviar WhatsApp"
+                                                    >
+                                                        <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="w-4 h-4" alt="WA" />
                                                     </button>
                                                     <button 
                                                         onClick={() => handleDeleteOrder(order.id)}
@@ -902,9 +968,18 @@ const AdminDashboard = () => {
                                         name="delivery" 
                                         defaultValue={editingOrderId ? orders.find(o => o.id === editingOrderId)?.deliveryLocation : ""}
                                         placeholder="Dirección de entrega..." 
-                                        className="w-full h-full bg-slate-900 border border-slate-600 rounded p-2 text-sm resize-none" 
+                                        className="w-full h-20 bg-slate-900 border border-slate-600 rounded p-2 text-sm resize-none mb-4" 
                                         required
                                     ></textarea>
+
+                                    <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Link de Evidencia (Drive/Fotos)</label>
+                                    <input 
+                                        name="evidenceLink" 
+                                        type="url"
+                                        placeholder="https://drive.google.com/..."
+                                        defaultValue={editingOrderId ? orders.find(o => o.id === editingOrderId)?.evidenceLink : ""}
+                                        className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-blue-400" 
+                                    />
                                 </div>
                             </div>
                         </div>
