@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import SalesChart from '../components/SalesChart';
-import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown } from 'lucide-react';
+import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown, CreditCard } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import { storage } from '../firebase';
@@ -12,7 +12,8 @@ const AdminDashboard = () => {
         clients, orders, leads, user, loadingAuth, login, logout, 
         addClient, updateClient, 
         addOrder, updateOrder, updateOrderStatus, deleteOrder,
-        addLead, updateLead, deleteLead
+        addLead, updateLead, deleteLead,
+        expenses, addExpense, deleteExpense
     } = useData();
 
     // Helper for status colors
@@ -63,6 +64,7 @@ const AdminDashboard = () => {
     // Order Filters
     const [orderFilter, setOrderFilter] = useState({ status: 'all', search: '' });
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' }); // Sort State
+    const [expenseFilter, setExpenseFilter] = useState({ date: '', method: 'all' }); // Expense Filter State
     
     // -- FUNCTIONS --
 
@@ -117,6 +119,14 @@ const AdminDashboard = () => {
         return result;
     }, [orders, clients, orderFilter, sortConfig]);
 
+    const filteredExpenses = useMemo(() => {
+        return expenses.filter(expense => {
+            const matchesDate = expenseFilter.date === '' || expense.date === expenseFilter.date;
+            const matchesMethod = expenseFilter.method === 'all' || expense.method === expenseFilter.method;
+            return matchesDate && matchesMethod;
+        });
+    }, [expenses, expenseFilter]);
+
     const handleSort = (key) => {
         let direction = 'asc';
         if (sortConfig.key === key && sortConfig.direction === 'asc') {
@@ -160,6 +170,19 @@ const AdminDashboard = () => {
             } catch(err) { alert('Error JSON'); }
         };
         reader.readAsText(file);
+    };
+
+    const handleSubmitExpense = (e) => {
+        e.preventDefault();
+        const data = new FormData(e.target);
+        addExpense({
+            concept: data.get('concept'),
+            amount: data.get('amount'),
+            date: data.get('date'),
+            method: data.get('method')
+        });
+        e.target.reset();
+        alert('Gasto registrado');
     };
 
 
@@ -539,6 +562,8 @@ Saludos, Tuna's Craft 🌵`;
     const totalSales = orders.reduce((sum, o) => sum + parseFloat(o.total || 0), 0);
     const totalPaid = orders.reduce((sum, o) => sum + parseFloat(o.advance || 0), 0);
     const totalReceivable = orders.reduce((sum, o) => sum + parseFloat(o.remaining || (o.total - (o.advance||0)) || 0), 0);
+    const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const netProfit = totalSales - totalExpenses;
     const activeQuotes = leads.filter(l => l.status === 'Nuevo' || l.status === 'Pendiente').length;
     const rejectedQuotes = leads.filter(l => l.status === 'Rechazada').length;
 
@@ -581,6 +606,7 @@ Saludos, Tuna's Craft 🌵`;
                     <NavBtn id="orders" icon={<CheckCircle />} label="Pedidos" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="leads" icon={<FileText />} label="Cotizaciones" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="clients" icon={<Users />} label="Clientes" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
+                    <NavBtn id="expenses" icon={<CreditCard />} label="Gastos" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                 </nav>
                 <div className="mt-auto pt-6 border-t border-slate-700 space-y-2">
                     <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white px-2">
@@ -607,6 +633,8 @@ Saludos, Tuna's Craft 🌵`;
                          {/* KPIs */}
                          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                              <StatCard title="Ventas Totales" value={`$${totalSales.toFixed(2)}`} icon={<DollarSign className="text-brand-blue" />} />
+                             <StatCard title="Gastos Totales" value={`$${totalExpenses.toFixed(2)}`} color="text-red-400" />
+                             <StatCard title="Ganancia Neta" value={`$${netProfit.toFixed(2)}`} color={netProfit >= 0 ? "text-green-400" : "text-red-500"} />
                              <StatCard title="Cobrado" value={`$${totalPaid.toFixed(2)}`} color="text-green-500" />
                              <StatCard title="Por Cobrar" value={`$${totalReceivable.toFixed(2)}`} color="text-brand-orange" />
                              <StatCard title="Pedidos Activos" value={orders.filter(o => o.status !== 'entregado').length} />
@@ -903,6 +931,129 @@ Saludos, Tuna's Craft 🌵`;
                             <button disabled={paginatedLeads.length < LEADS_PER_PAGE} onClick={() => setLeadsPage(p => p + 1)} className="px-3 py-1 bg-slate-800 rounded disabled:opacity-50">Siguiente</button>
                         </div>
                      </div>
+                 )}
+
+                 {/* Expenses */}
+                 {activeTab === 'expenses' && (
+                    <div className="space-y-6">
+                        <h2 className="text-3xl font-display font-bold md:ml-0 ml-12">Gastos</h2>
+                        
+                        {/* Expense Form */}
+                        <div className="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                            <h3 className="font-bold text-lg mb-4">Registrar Nuevo Gasto</h3>
+                            <form onSubmit={handleSubmitExpense} className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                                <div className="md:col-span-2">
+                                    <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Concepto / Material</label>
+                                    <input name="concept" required placeholder="Ej. Madera, Pintura..." className="w-full bg-slate-900 border border-slate-600 rounded p-2" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Costo</label>
+                                    <div className="relative">
+                                        <span className="absolute left-3 top-2 text-slate-500">$</span>
+                                        <input name="amount" type="number" step="0.01" required placeholder="0.00" className="w-full bg-slate-900 border border-slate-600 rounded p-2 pl-7" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Fecha de Pago</label>
+                                    <input name="date" type="date" required className="w-full bg-slate-900 border border-slate-600 rounded p-2" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Método de Pago</label>
+                                    <select name="method" className="w-full bg-slate-900 border border-slate-600 rounded p-2">
+                                        <option value="Kueski">Kueski</option>
+                                        <option value="Mercadolibre">MercadoLibre</option>
+                                        <option value="Tarjeta">Tarjeta</option>
+                                        <option value="Efectivo">Efectivo</option>
+                                        <option value="Transferencia">Transferencia</option>
+                                    </select>
+                                </div>
+                                <div className="md:col-span-5 flex justify-end">
+                                    <button type="submit" className="bg-brand-blue hover:bg-blue-600 px-6 py-2 rounded-lg font-bold flex items-center gap-2">
+                                        <Plus size={18} /> Registrar Gasto
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        {/* Expense Filters */}
+                        <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-4">
+                             <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
+                                 <div>
+                                     <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Filtrar por Fecha</label>
+                                     <input 
+                                         type="date" 
+                                         value={expenseFilter.date} 
+                                         onChange={(e) => setExpenseFilter({...expenseFilter, date: e.target.value})} 
+                                         className="bg-slate-800 border border-slate-700 rounded p-2 text-sm w-full md:w-auto"
+                                     />
+                                 </div>
+                                 
+                                 <div>
+                                     <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Filtrar por Método</label>
+                                     <select 
+                                         value={expenseFilter.method} 
+                                         onChange={(e) => setExpenseFilter({...expenseFilter, method: e.target.value})} 
+                                         className="bg-slate-800 border border-slate-700 rounded p-2 text-sm w-full md:w-auto"
+                                     >
+                                         <option value="all">Ver Todos</option>
+                                         <option value="Kueski">Kueski</option>
+                                         <option value="Mercadolibre">MercadoLibre</option>
+                                         <option value="Tarjeta">Tarjeta</option>
+                                         <option value="Efectivo">Efectivo</option>
+                                         <option value="Transferencia">Transferencia</option>
+                                     </select>
+                                 </div>
+
+                                 {(expenseFilter.date || expenseFilter.method !== 'all') && (
+                                     <div className="flex items-end">
+                                         <button 
+                                             onClick={() => setExpenseFilter({ date: '', method: 'all' })}
+                                             className="text-brand-orange hover:text-orange-400 text-xs font-bold underline mb-3"
+                                         >
+                                             Limpiar Filtros
+                                         </button>
+                                     </div>
+                                 )}
+                             </div>
+                        </div>
+
+                        {/* Expenses Table */}
+                        <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 overflow-x-auto">
+                            <table className="w-full text-left min-w-[600px]">
+                                <thead className="bg-slate-700/50 text-slate-300">
+                                    <tr>
+                                        <th className="p-4">Concepto</th>
+                                        <th className="p-4">Fecha</th>
+                                        <th className="p-4">Método</th>
+                                        <th className="p-4 text-right">Monto</th>
+                                        <th className="p-4 text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-700">
+                                    {filteredExpenses.map(expense => (
+                                        <tr key={expense.id} className="hover:bg-slate-700/30">
+                                            <td className="p-4 font-bold">{expense.concept}</td>
+                                            <td className="p-4 text-slate-400 text-sm">{expense.date}</td>
+                                            <td className="p-4 text-slate-400 text-sm">
+                                                <span className="bg-slate-700 px-2 py-1 rounded text-xs">{expense.method}</span>
+                                            </td>
+                                            <td className="p-4 text-right font-bold text-red-400">-${parseFloat(expense.amount).toFixed(2)}</td>
+                                            <td className="p-4 text-center">
+                                                <button onClick={() => deleteExpense(expense.id)} className="text-slate-500 hover:text-red-400 transition-colors">
+                                                    <Trash2 size={16} />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredExpenses.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" className="p-8 text-center text-slate-500">No hay gastos coinciden con los filtros.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                  )}
              </main>
 

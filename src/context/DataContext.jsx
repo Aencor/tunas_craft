@@ -12,6 +12,7 @@ export const DataProvider = ({ children }) => {
     const [clients, setClients] = useState([]);
     const [orders, setOrders] = useState([]);
     const [leads, setLeads] = useState([]);
+    const [expenses, setExpenses] = useState([]);
     const [user, setUser] = useState(null);
     const [loadingAuth, setLoadingAuth] = useState(true);
 
@@ -19,6 +20,7 @@ export const DataProvider = ({ children }) => {
     const clientsCollection = collection(db, 'clients');
     const ordersCollection = collection(db, 'orders');
     const leadsCollection = collection(db, 'leads');
+    const expensesCollection = collection(db, 'expenses');
 
     // Auth & Listeners
     useEffect(() => {
@@ -37,17 +39,22 @@ export const DataProvider = ({ children }) => {
                 const unsubLeads = onSnapshot(leadsCollection, (snapshot) => {
                     setLeads(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
                 });
+                const unsubExpenses = onSnapshot(expensesCollection, (snapshot) => {
+                    setExpenses(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+                });
 
                 return () => {
                     unsubClients();
                     unsubOrders();
                     unsubLeads();
+                    unsubExpenses();
                 };
             } else {
                 // Clear state on logout
                 setClients([]);
                 setOrders([]);
                 setLeads([]);
+                setExpenses([]);
             }
         });
 
@@ -175,6 +182,27 @@ export const DataProvider = ({ children }) => {
         await updateDoc(docRef, { status });
     };
 
+    // EXPENSES
+    const addExpense = async (expense) => {
+        const newExpense = {
+            ...expense,
+            amount: parseFloat(expense.amount),
+            date: expense.date || new Date().toISOString()
+        };
+        const docRef = await addDoc(expensesCollection, newExpense);
+        return { ...newExpense, id: docRef.id };
+    };
+
+    const deleteExpense = async (id) => {
+        try {
+            const docRef = doc(db, 'expenses', id);
+            await deleteDoc(docRef);
+        } catch (error) {
+            console.error("Error deleting expense:", error);
+            alert(`Error al eliminar gasto: ${error.code} - ${error.message}`);
+        }
+    };
+
     // BULK IMPORT (Optional implementation for Firebase)
     const importDatabase = async (data) => {
         // Note: This would be expensive in valid reads/writes, implementing naive version
@@ -190,6 +218,7 @@ export const DataProvider = ({ children }) => {
             addClient, updateClient, deleteClient,
             addOrder, updateOrderStatus, updateOrder, deleteOrder,
             addLead, updateLeadStatus,
+            expenses, addExpense, deleteExpense,
             importDatabase
         }}>
             {children}
