@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import SalesChart from '../components/SalesChart';
-import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X } from 'lucide-react';
+import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import { storage } from '../firebase';
@@ -56,11 +56,13 @@ const AdminDashboard = () => {
 
     // Filters
     const [leadFilter, setLeadFilter] = useState({ status: 'all', clientId: '' });
+    const [clientQuery, setClientQuery] = useState('');
     const [leadsPage, setLeadsPage] = useState(0);
     const LEADS_PER_PAGE = 30;
 
     // Order Filters
     const [orderFilter, setOrderFilter] = useState({ status: 'all', search: '' });
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' }); // Sort State
     
     // -- FUNCTIONS --
 
@@ -73,23 +75,55 @@ const AdminDashboard = () => {
     };
 
     // Derived State for Orders (Safe to compute even if empty)
-    const filteredOrders = useMemo(() => orders.filter(order => {
-        const search = orderFilter.search.toLowerCase();
-        // Resolve client data for search
-        const client = clients.find(c => c.id === order.clientId);
-        const clientName = client ? client.name.toLowerCase() : (order.client || '').toLowerCase();
-        const clientEmail = client ? client.email.toLowerCase() : '';
-        
-        const matchesSearch = 
-            search === '' ||
-            order.id.toLowerCase().includes(search) ||
-            clientName.includes(search) ||
-            clientEmail.includes(search);
+    const filteredOrders = useMemo(() => {
+        let result = orders.filter(order => {
+            const search = orderFilter.search.toLowerCase();
+            const client = clients.find(c => c.id === order.clientId);
+            const clientName = client ? client.name.toLowerCase() : (order.client || '').toLowerCase();
+            const clientEmail = client ? client.email.toLowerCase() : '';
             
-        const matchesStatus = orderFilter.status === 'all' || order.status === orderFilter.status;
-        
-        return matchesSearch && matchesStatus;
-    }), [orders, clients, orderFilter]);
+            const matchesSearch = 
+                search === '' ||
+                order.id.toLowerCase().includes(search) ||
+                clientName.includes(search) ||
+                clientEmail.includes(search);
+                
+            const matchesStatus = orderFilter.status === 'all' || order.status === orderFilter.status;
+            
+            return matchesSearch && matchesStatus;
+        });
+
+        if (sortConfig.key) {
+            result.sort((a, b) => {
+                let aValue = a[sortConfig.key];
+                let bValue = b[sortConfig.key];
+
+                if (sortConfig.key === 'deadline') {
+                    aValue = aValue || '';
+                    bValue = bValue || '';
+                }
+
+                if (sortConfig.key === 'status') {
+                    const statusOrder = { 'pedido': 0, 'proceso': 1, 'terminado': 2, 'entregado': 3 };
+                    aValue = statusOrder[aValue] ?? 99;
+                    bValue = statusOrder[bValue] ?? 99;
+                }
+
+                if (aValue < bValue) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        return result;
+    }, [orders, clients, orderFilter, sortConfig]);
+
+    const handleSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
 
     // -- EARLY RETURNS --
     if (loadingAuth) return <div className="flex items-center justify-center h-screen bg-slate-900 text-white">Cargando...</div>;
@@ -627,10 +661,31 @@ Saludos, Tuna's Craft 🌵`;
                                     <tr>
                                         <th className="p-4">ID</th>
                                         <th className="p-4">Cliente</th>
+                                        <th className="p-4">Lugar</th>
                                         <th className="p-4 text-center">Arts.</th>
-                                        <th className="p-4">Fecha Entrega</th>
+                                        <th 
+                                            className="p-4 cursor-pointer hover:text-white transition-colors select-none"
+                                            onClick={() => handleSort('deadline')}
+                                        >
+                                            <div className="flex items-center gap-1">
+                                                Fecha Entrega
+                                                {sortConfig.key === 'deadline' && (
+                                                    <ArrowUpDown size={14} className={sortConfig.direction === 'asc' ? 'text-brand-blue' : 'text-brand-orange'} />
+                                                )}
+                                            </div>
+                                        </th>
                                         <th className="p-4">Restante</th>
-                                        <th className="p-4">Estatus</th>
+                                        <th 
+                                            className="p-4 cursor-pointer hover:text-white transition-colors select-none"
+                                            onClick={() => handleSort('status')}
+                                        >
+                                            <div className="flex items-center gap-1">
+                                                Estatus
+                                                {sortConfig.key === 'status' && (
+                                                    <ArrowUpDown size={14} className={sortConfig.direction === 'asc' ? 'text-brand-blue' : 'text-brand-orange'} />
+                                                )}
+                                            </div>
+                                        </th>
                                         <th className="p-4">Total</th>
                                         <th className="p-4 text-center">Acciones</th>
                                     </tr>
@@ -641,7 +696,9 @@ Saludos, Tuna's Craft 🌵`;
                                             <td className="p-4 text-xs text-slate-500">#{order.id.slice(-4)}</td>
                                             <td className="p-4 font-medium">
                                                 {order.client || clients.find(c => c.id === order.clientId)?.name || 'Unknown'}
-                                                <div className="text-xs text-slate-500 max-w-[150px] truncate">{order.deliveryLocation || 'Sin ubicación'}</div>
+                                            </td>
+                                            <td className="p-4 text-sm text-slate-400">
+                                                {order.deliveryLocation || 'Sin ubicación'}
                                             </td>
                                             <td className="p-4 text-center">
                                                 <div className="font-bold text-sm mb-1">{order.items ? order.items.length : 1}</div>
@@ -729,14 +786,34 @@ Saludos, Tuna's Craft 🌵`;
                  {/* Clients */}
                  {activeTab === 'clients' && (
                      <div>
-                         <div className="flex justify-between items-center mb-6">
+                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                             <h2 className="text-3xl font-display font-bold">Clientes</h2>
-                            <button onClick={() => setNewClientModal(true)} className="bg-brand-blue hover:bg-blue-600 px-4 py-2 rounded-lg font-bold flex items-center gap-2">
-                                <Plus size={18} /> Nuevo Cliente
-                            </button>
+                            <div className="flex w-full md:w-auto gap-2">
+                               <div className="relative flex-1 md:w-64">
+                                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
+                                   <input 
+                                       type="text" 
+                                       placeholder="Buscar cliente..." 
+                                       value={clientQuery}
+                                       onChange={(e) => setClientQuery(e.target.value)}
+                                       className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-brand-blue"
+                                   />
+                               </div>
+                               <button onClick={() => setNewClientModal(true)} className="bg-brand-blue hover:bg-blue-600 px-4 py-2 rounded-lg font-bold flex items-center gap-2 whitespace-nowrap">
+                                   <Plus size={18} /> Nuevo
+                               </button>
+                            </div>
                          </div>
                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                             {clients.map(client => (
+                             {clients.filter(c => {
+                                 if (!clientQuery) return true;
+                                 const q = clientQuery.toLowerCase();
+                                 return (
+                                     c.name.toLowerCase().includes(q) || 
+                                     (c.email && c.email.toLowerCase().includes(q)) ||
+                                     (c.phone && c.phone.includes(q))
+                                 );
+                             }).map(client => (
                                  <div key={client.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700">
                                      <div className="flex justify-between items-start">
                                         <h3 className="font-bold text-lg">{client.name}</h3>
