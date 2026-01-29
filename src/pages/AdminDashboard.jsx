@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import SalesChart from '../components/SalesChart';
-import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown, CreditCard } from 'lucide-react';
+import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown, CreditCard, ArrowUp, ArrowDown } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import { storage } from '../firebase';
@@ -43,6 +43,7 @@ const AdminDashboard = () => {
     const [uploadImageModal, setUploadImageModal] = useState(null); // { orderId }
     const [detailsModal, setDetailsModal] = useState(null); // { type: 'order' | 'quote', data: object }
     const [editClientModal, setEditClientModal] = useState(null); // { client }
+    const [clientHistoryModal, setClientHistoryModal] = useState(null); // { client }
     
     // New Order State
     const [orderItems, setOrderItems] = useState([{ desc: '', qty: 1, price: 0 }]);
@@ -65,6 +66,7 @@ const AdminDashboard = () => {
     const [orderFilter, setOrderFilter] = useState({ status: 'all', search: '' });
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' }); // Sort State
     const [expenseFilter, setExpenseFilter] = useState({ date: '', method: 'all' }); // Expense Filter State
+    const [clientSortConfig, setClientSortConfig] = useState({ key: 'name', direction: 'asc' }); // Client Sort State
     
     // -- FUNCTIONS --
 
@@ -134,6 +136,46 @@ const AdminDashboard = () => {
         }
         setSortConfig({ key, direction });
     };
+
+    const handleClientSort = (key) => {
+        let direction = 'asc';
+        if (clientSortConfig.key === key && clientSortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setClientSortConfig({ key, direction });
+    };
+
+    const filteredClients = useMemo(() => {
+        let result = clients.map(client => ({
+            ...client,
+            orderCount: orders.filter(o => o.clientId === client.id).length
+        }));
+
+        if (clientQuery) {
+            const q = clientQuery.toLowerCase();
+            result = result.filter(c => 
+                 c.name.toLowerCase().includes(q) || 
+                 (c.email && c.email.toLowerCase().includes(q)) ||
+                 (c.phone && c.phone.includes(q))
+            );
+        }
+
+        if (clientSortConfig.key) {
+            result.sort((a, b) => {
+                let aValue = a[clientSortConfig.key];
+                let bValue = b[clientSortConfig.key];
+
+                if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+                if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+                if (aValue < bValue) return clientSortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return clientSortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        return result;
+    }, [clients, orders, clientQuery, clientSortConfig]);
 
     // -- EARLY RETURNS --
     if (loadingAuth) return <div className="flex items-center justify-center h-screen bg-slate-900 text-white">Cargando...</div>;
@@ -581,7 +623,7 @@ Saludos, Tuna's Craft 🌵`;
              {/* Mobile Sidebar Toggle */}
              <button 
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
-                className="md:hidden absolute top-6 left-6 z-50 p-2 bg-slate-800 rounded-lg text-white shadow-lg border border-slate-700"
+                className="md:hidden absolute top-6 right-6 z-50 p-2 bg-slate-800 rounded-lg text-white shadow-lg border border-slate-700"
             >
                 {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
              </button>
@@ -832,47 +874,93 @@ Saludos, Tuna's Craft 🌵`;
                                </button>
                             </div>
                          </div>
-                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                             {clients.filter(c => {
-                                 if (!clientQuery) return true;
-                                 const q = clientQuery.toLowerCase();
-                                 return (
-                                     c.name.toLowerCase().includes(q) || 
-                                     (c.email && c.email.toLowerCase().includes(q)) ||
-                                     (c.phone && c.phone.includes(q))
-                                 );
-                             }).map(client => (
-                                 <div key={client.id} className="bg-slate-800 p-4 rounded-xl border border-slate-700">
-                                     <div className="flex justify-between items-start">
-                                        <h3 className="font-bold text-lg">{client.name}</h3>
-                                        <span className={`text-xs px-2 py-1 rounded uppercase font-bold 
-                                            ${client.type === 'distribuidor' ? 'bg-purple-500/20 text-purple-400' : 
-                                              client.type === 'mayorista' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-600/20 text-slate-400'}`}>
-                                            {client.type}
-                                        </span>
-                                     </div>
-                                     <p className="text-sm text-slate-400 mt-1">ID: {client.id ? client.id.slice(-6) : 'N/A'}</p>
-                                     <p className="text-sm text-slate-400">{client.email}</p>
-                                     <p className="text-sm text-slate-400">{client.phone}</p>
-                                     {(client.facebook || client.instagram) && (
-                                         <div className="flex gap-2 text-xs text-slate-500 mt-1">
-                                             {client.facebook && <span>FB: {client.facebook}</span>}
-                                             {client.instagram && <span>IG: {client.instagram}</span>}
-                                         </div>
-                                     )}
-                                     <p className="text-xs text-slate-500 mt-2 truncate"><span className='font-bold'>Dirección:</span> {client.address || 'Sin dirección'}</p>
-                                     
-                                     <div className="flex gap-2 mt-4">
-                                         <button onClick={() => setEditClientModal(client)} className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded text-xs font-bold flex justify-center items-center gap-2">
-                                             <Edit size={14} /> Editar
-                                         </button>
-                                         <button onClick={() => handleDeleteClient(client.id)} className="py-2 px-3 bg-red-900/30 hover:bg-red-900/50 text-red-200 rounded text-xs font-bold flex justify-center items-center">
-                                             <Trash2 size={14} />
-                                         </button>
-                                     </div>
-                                 </div>
-                             ))}
-                         </div>
+                          <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 overflow-x-auto">
+                            <table className="w-full text-left min-w-[800px]">
+                                <thead className="bg-slate-700/50 text-slate-300">
+                                    <tr>
+                                        <th className="p-4 cursor-pointer hover:text-white" onClick={() => handleClientSort('name')}>
+                                            <div className="flex items-center gap-1">
+                                                Nombre
+                                                {clientSortConfig.key === 'name' && (clientSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                            </div>
+                                        </th>
+                                        <th className="p-4 cursor-pointer hover:text-white" onClick={() => handleClientSort('type')}>
+                                            <div className="flex items-center gap-1">
+                                                Tipo
+                                                {clientSortConfig.key === 'type' && (clientSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                            </div>
+                                        </th>
+                                        <th className="p-4 cursor-pointer hover:text-white" onClick={() => handleClientSort('orderCount')}>
+                                            <div className="flex items-center gap-1">
+                                                No. Pedidos
+                                                {clientSortConfig.key === 'orderCount' && (clientSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                            </div>
+                                        </th>
+                                        <th className="p-4">Contacto</th>
+                                        <th className="p-4">Dirección</th>
+                                        <th className="p-4 text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-700">
+                                    {filteredClients.map(client => (
+                                        <tr key={client.id} className="hover:bg-slate-700/30">
+                                            <td className="p-4 font-bold">
+                                                {client.name}
+                                                <div className="text-xs text-slate-500 font-normal">ID: {client.id.slice(-6)}</div>
+                                            </td>
+                                            <td className="p-4">
+                                                <span className={`text-xs px-2 py-1 rounded uppercase font-bold 
+                                                    ${client.type === 'distribuidor' ? 'bg-purple-500/20 text-purple-400' : 
+                                                      client.type === 'mayorista' ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-600/20 text-slate-400'}`}>
+                                                    {client.type}
+                                                </span>
+                                            </td>
+                                            <td className="p-4 text-center font-bold text-slate-300">
+                                                {client.orderCount}
+                                            </td>
+                                            <td className="p-4 text-sm text-slate-400">
+                                                <div>{client.email}</div>
+                                                <div>{client.phone}</div>
+                                                {(client.facebook || client.instagram) && (
+                                                    <div className="flex gap-2 text-xs text-slate-500 mt-1">
+                                                        {client.facebook && <span>FB: {client.facebook}</span>}
+                                                        {client.instagram && <span>IG: {client.instagram}</span>}
+                                                    </div>
+                                                )}
+                                            </td>
+                                            <td className="p-4 text-sm text-slate-400 max-w-xs truncate">
+                                                {client.address || 'Sin dirección'}
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <div className="flex justify-center gap-2">
+                                                    <button 
+                                                        onClick={() => setClientHistoryModal(client)}
+                                                        className="p-2 bg-blue-900/30 hover:bg-blue-900/50 text-blue-200 rounded transition-colors"
+                                                        title="Ver Historial"
+                                                    >
+                                                        <Eye size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setEditClientModal(client)} 
+                                                        className="p-2 bg-slate-700 hover:bg-slate-600 rounded transition-colors"
+                                                        title="Editar"
+                                                    >
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDeleteClient(client.id)} 
+                                                        className="p-2 bg-red-900/30 hover:bg-red-900/50 text-red-200 rounded transition-colors"
+                                                        title="Eliminar"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                          </div>
                      </div>
                  )}
 
@@ -1572,6 +1660,87 @@ Saludos, Tuna's Craft 🌵`;
                     </form>
                 </div>
             )}
+
+            {/* Client History Modal */}
+            {clientHistoryModal && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+                    <div className="bg-slate-800 p-6 rounded-2xl w-full max-w-2xl border border-slate-700 max-h-[85vh] overflow-y-auto">
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 className="text-xl font-bold">Historial de Pedidos</h3>
+                                <p className="text-slate-400">{clientHistoryModal.name}</p>
+                            </div>
+                            <button onClick={() => setClientHistoryModal(null)} className="p-1 hover:bg-slate-700 rounded-full">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-700">
+                             <table className="w-full text-left font-sm">
+                                <thead className="bg-slate-800 text-slate-300">
+                                    <tr>
+                                        <th className="p-3">ID</th>
+                                        <th className="p-3">Fecha</th>
+                                        <th className="p-3">Artículos</th>
+                                        <th className="p-3">Pagos</th>
+                                        <th className="p-3">Estatus</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-700">
+                                    {orders.filter(o => o.clientId === clientHistoryModal.id).map(order => (
+                                        <tr key={order.id} className="hover:bg-slate-800">
+                                            <td className="p-3 text-xs text-slate-500 align-top">#{order.id.slice(-4)}</td>
+                                            <td className="p-3 text-sm align-top whitespace-nowrap">{order.date}</td>
+                                            <td className="p-3 align-top min-w-[200px]">
+                                                {order.items && order.items.length > 0 ? (
+                                                    <div className="space-y-1">
+                                                        {order.items.map((item, idx) => (
+                                                            <div key={idx} className="text-sm">
+                                                                <span className="text-slate-300 font-bold">{item.qty}x</span> {item.desc}
+                                                                {item.price && <span className="text-slate-500 text-xs ml-1">(${item.price})</span>}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-slate-500 text-sm">{order.desc || order.details}</span>
+                                                )}
+                                            </td>
+                                            <td className="p-3 align-top min-w-[150px]">
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="text-slate-400">Total:</span>
+                                                    <span className="font-bold">${order.total}</span>
+                                                </div>
+                                                <div className="flex justify-between text-xs mt-1">
+                                                    <span className="text-slate-500">Anticipo:</span>
+                                                    <span className="text-green-500">-${order.advance || 0}</span>
+                                                </div>
+                                                <div className="flex justify-between text-xs mt-1 border-t border-slate-700 pt-1">
+                                                    <span className="text-slate-400">Resta:</span>
+                                                    <span className={`font-bold ${(order.remaining > 0 || (order.total - (order.advance || 0)) > 0) ? 'text-brand-orange' : 'text-slate-500'}`}>
+                                                        ${order.remaining ?? (order.total - (order.advance || 0))}
+                                                    </span>
+                                                </div>
+                                            </td>
+                                            <td className="p-3 align-top">
+                                                 <span className={`text-xs px-2 py-1 rounded uppercase font-bold border ${getStatusColor(order.status)}`}>
+                                                    {order.status}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {orders.filter(o => o.clientId === clientHistoryModal.id).length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" className="p-6 text-center text-slate-500">Este cliente no tiene pedidos registrados.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                             </table>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
         </div>
     );
 };
