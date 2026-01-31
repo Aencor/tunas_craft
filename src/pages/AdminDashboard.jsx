@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import SalesChart from '../components/SalesChart';
-import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown, CreditCard, ArrowUp, ArrowDown, Calculator } from 'lucide-react';
+import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown, CreditCard, ArrowUp, ArrowDown, Calculator, Archive } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import { storage } from '../firebase';
@@ -15,7 +15,8 @@ const AdminDashboard = () => {
         addClient, updateClient, 
         addOrder, updateOrder, updateOrderStatus, deleteOrder,
         addLead, updateLead, deleteLead,
-        expenses, addExpense, deleteExpense
+        expenses, addExpense, deleteExpense,
+        quotes, deleteQuote, updateQuote
     } = useData();
 
     // Helper for status colors
@@ -70,6 +71,13 @@ const AdminDashboard = () => {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' }); // Sort State
     const [expenseFilter, setExpenseFilter] = useState({ date: '', method: 'all' }); // Expense Filter State
     const [clientSortConfig, setClientSortConfig] = useState({ key: 'name', direction: 'asc' }); // Client Sort State
+    
+    // Quote Filters
+    const [quoteFilter, setQuoteFilter] = useState({ category: 'all', search: '' });
+    const [quoteSortConfig, setQuoteSortConfig] = useState({ key: 'date', direction: 'desc' });
+    const [quoteToEdit, setQuoteToEdit] = useState(null);
+    const [selectedQuoteIds, setSelectedQuoteIds] = useState(new Set());
+    const [batchCategory, setBatchCategory] = useState('');
     
     // -- FUNCTIONS --
 
@@ -179,6 +187,98 @@ const AdminDashboard = () => {
 
         return result;
     }, [clients, orders, clientQuery, clientSortConfig]);
+
+    const filteredQuotes = useMemo(() => {
+        let result = quotes.filter(quote => {
+            const search = quoteFilter.search.toLowerCase();
+            // Handle array or string
+            const categories = Array.isArray(quote.category) ? quote.category : [quote.category];
+            const categoriesString = categories.filter(Boolean).join(' ').toLowerCase();
+
+            const matchesSearch = 
+                search === '' ||
+                quote.name.toLowerCase().includes(search) ||
+                categoriesString.includes(search);
+            
+            const matchesCategory = quoteFilter.category === 'all' || categories.includes(quoteFilter.category);
+            
+            return matchesSearch && matchesCategory;
+        });
+
+        if (quoteSortConfig.key) {
+            result.sort((a, b) => {
+                let aValue = a[quoteSortConfig.key] || '';
+                let bValue = b[quoteSortConfig.key] || '';
+                
+                if (quoteSortConfig.key === 'date') {
+                    aValue = new Date(a.date).getTime();
+                    bValue = new Date(b.date).getTime();
+                }
+
+                if (aValue < bValue) return quoteSortConfig.direction === 'asc' ? -1 : 1;
+                if (aValue > bValue) return quoteSortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+        return result;
+    }, [quotes, quoteFilter, quoteSortConfig]);
+
+    const handleQuoteSort = (key) => {
+        let direction = 'asc';
+        if (quoteSortConfig.key === key && quoteSortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setQuoteSortConfig({ key, direction });
+    };
+
+    // Unique Categories for Filter
+    const uniqueCategories = useMemo(() => {
+        const cats = new Set(quotes.flatMap(q => Array.isArray(q.category) ? q.category : [q.category]).filter(Boolean));
+        return ['all', ...Array.from(cats)];
+    }, [quotes]);
+    
+    const handleEditQuote = (quote) => {
+        setQuoteToEdit(quote);
+        setActiveTab('calculator');
+    };
+
+    const handleSelectAll = (e) => {
+        if (e.target.checked) {
+            setSelectedQuoteIds(new Set(filteredQuotes.map(q => q.id)));
+        } else {
+            setSelectedQuoteIds(new Set());
+        }
+    };
+
+    const handleSelectQuote = (id) => {
+        const next = new Set(selectedQuoteIds);
+        if (next.has(id)) {
+            next.delete(id);
+        } else {
+            next.add(id);
+        }
+        setSelectedQuoteIds(next);
+    };
+
+    const handleBatchUpdate = async () => {
+        if (!batchCategory.trim()) return alert('Ingresa una categoría');
+        if (selectedQuoteIds.size === 0) return;
+
+        if (!confirm(`¿Actualizar categoría para ${selectedQuoteIds.size} cotizaciones?`)) return;
+
+        try {
+            // Split by comma
+            const categoryArray = batchCategory.split(',').map(c => c.trim()).filter(c => c);
+            const updates = Array.from(selectedQuoteIds).map(id => updateQuote(id, { category: categoryArray }));
+            await Promise.all(updates);
+            alert('Categorías actualizadas');
+            setSelectedQuoteIds(new Set());
+            setBatchCategory('');
+        } catch (error) {
+            console.error(error);
+            alert('Error al actualizar');
+        }
+    };
 
     // -- EARLY RETURNS --
     if (loadingAuth) return <div className="flex items-center justify-center h-screen bg-slate-900 text-white">Cargando...</div>;
@@ -668,6 +768,7 @@ Saludos, Tuna's Craft 🌵`;
                     <NavBtn id="leads" icon={<FileText />} label="Cotizaciones" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="clients" icon={<Users />} label="Clientes" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="expenses" icon={<CreditCard />} label="Gastos" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
+                    <NavBtn id="saved_quotes" icon={<Archive />} label="Historial 3D" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="calculator" icon={<Calculator />} label="Cotizador 3D" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                 </nav>
                 <div className="mt-auto pt-6 border-t border-slate-700 space-y-2">
@@ -1171,7 +1272,174 @@ Saludos, Tuna's Craft 🌵`;
                  {activeTab === 'calculator' && (
                      <div>
                           <h2 className="text-3xl font-display font-bold mb-6">Cotizador 3D</h2>
-                          <PriceCalculator />
+                          <PriceCalculator initialData={quoteToEdit} onCancel={() => setQuoteToEdit(null)} />
+                     </div>
+                 )}
+
+                 {/* Saved Quotes History */}
+                 {activeTab === 'saved_quotes' && (
+                     <div>
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                            <h2 className="text-3xl font-display font-bold">Historial de Cotizaciones 3D</h2>
+                            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                                <div className="relative w-full md:w-64">
+                                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
+                                   <input 
+                                       type="text" 
+                                       placeholder="Buscar cotización..." 
+                                       value={quoteFilter.search}
+                                       onChange={(e) => setQuoteFilter({...quoteFilter, search: e.target.value})}
+                                       className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-brand-blue"
+                                   />
+                                </div>
+                                <select 
+                                    className="bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm w-full md:w-auto focus:outline-none focus:border-brand-blue"
+                                    value={quoteFilter.category}
+                                    onChange={(e) => setQuoteFilter({...quoteFilter, category: e.target.value})}
+                                >
+                                    <option value="all">Todas las Categorías</option>
+                                    {uniqueCategories.filter(c => c !== 'all').map(c => (
+                                        <option key={c} value={c}>{c}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Batch Action Bar */}
+                        {selectedQuoteIds.size > 0 && (
+                            <div className="bg-brand-blue/20 border border-brand-blue p-4 rounded-xl mb-6 flex flex-col md:flex-row items-center gap-4 animate-in fade-in slide-in-from-top-4">
+                                <span className="font-bold text-brand-blue">{selectedQuoteIds.size} seleccionados</span>
+                                <div className="flex-1 flex gap-2 w-full md:w-auto">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Nueva Categoría para selección..." 
+                                        value={batchCategory}
+                                        list="batch-categories-list"
+                                        onChange={(e) => setBatchCategory(e.target.value)}
+                                        className="flex-1 bg-slate-900 border border-brand-blue/50 rounded-lg px-4 py-2 text-sm focus:outline-none focus:border-brand-blue"
+                                    />
+                                    <datalist id="batch-categories-list">
+                                        {uniqueCategories.filter(c => c !== 'all').map(c => (
+                                            <option key={c} value={c} />
+                                        ))}
+                                    </datalist>
+                                    <button 
+                                        onClick={handleBatchUpdate}
+                                        className="bg-brand-blue hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors whitespace-nowrap"
+                                    >
+                                        Actualizar Categoría
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 overflow-x-auto">
+                            <table className="w-full text-left min-w-[800px]">
+                                <thead className="bg-slate-700/50 text-slate-300">
+                                    <tr>
+                                        <th className="p-4 w-10">
+                                            <input 
+                                                type="checkbox" 
+                                                onChange={handleSelectAll}
+                                                checked={selectedQuoteIds.size === filteredQuotes.length && filteredQuotes.length > 0}
+                                                className="rounded border-slate-600 bg-slate-800 text-brand-orange focus:ring-brand-orange"
+                                            />
+                                        </th>
+                                        <th className="p-4 cursor-pointer hover:text-white" onClick={() => handleQuoteSort('category')}>
+                                            <div className="flex items-center gap-1">
+                                                Categoría
+                                                {quoteSortConfig.key === 'category' && (quoteSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                            </div>
+                                        </th>
+                                        <th className="p-4 cursor-pointer hover:text-white" onClick={() => handleQuoteSort('name')}>
+                                             <div className="flex items-center gap-1">
+                                                Pieza
+                                                {quoteSortConfig.key === 'name' && (quoteSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                            </div>
+                                        </th>
+                                        <th className="p-4 cursor-pointer hover:text-white" onClick={() => handleQuoteSort('date')}>
+                                             <div className="flex items-center gap-1">
+                                                Fecha
+                                                {quoteSortConfig.key === 'date' && (quoteSortConfig.direction === 'asc' ? <ArrowUp size={14} /> : <ArrowDown size={14} />)}
+                                            </div>
+                                        </th>
+                                        <th className="p-4">Peso</th>
+                                        <th className="p-4">Tiempo</th>
+                                        <th className="p-4">Costo Prod.</th>
+                                        <th className="p-4 text-brand-orange font-bold">Precio Final</th>
+                                        <th className="p-4 text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-700">
+                                    {filteredQuotes.map(quote => (
+                                        <tr key={quote.id} className={`hover:bg-slate-700/30 ${selectedQuoteIds.has(quote.id) ? 'bg-brand-blue/10' : ''}`}>
+                                            <td className="p-4">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={selectedQuoteIds.has(quote.id)}
+                                                    onChange={() => handleSelectQuote(quote.id)}
+                                                    className="rounded border-slate-600 bg-slate-800 text-brand-orange focus:ring-brand-orange"
+                                                />
+                                            </td>
+                                            <td className="p-4">
+                                                <div className="flex flex-wrap gap-1">
+                                                    {(Array.isArray(quote.category) ? quote.category : [quote.category]).filter(Boolean).map((cat, idx) => (
+                                                        <span key={idx} className="bg-slate-700 px-2 py-1 rounded text-xs font-bold text-slate-300 whitespace-nowrap">
+                                                            {cat}
+                                                        </span>
+                                                    ))}
+                                                    {(!quote.category || (Array.isArray(quote.category) && quote.category.length === 0)) && (
+                                                        <span className="text-slate-500 text-xs italic">N/A</span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="p-4 font-bold text-white">{quote.name}</td>
+                                            <td className="p-4 text-sm text-slate-400">{new Date(quote.date).toLocaleDateString()}</td>
+                                            <td className="p-4 text-sm text-slate-300">{quote.params?.weight}g</td>
+                                            <td className="p-4 text-sm text-slate-300">{quote.params?.timeHours}h {quote.params?.timeMinutes}m</td>
+                                            <td className="p-4 font-mono text-slate-400 text-xs">
+                                                {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(quote.costs?.total || 0)}
+                                            </td>
+                                            <td className="p-4 font-mono font-bold text-brand-orange">
+                                                {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(quote.costs?.suggested || 0)}
+                                            </td>
+                                            <td className="p-4 text-center">
+                                                <div className="flex justify-center gap-2">
+                                                     <button 
+                                                        onClick={() => handleEditQuote(quote)}
+                                                        className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-blue-400"
+                                                        title="Editar"
+                                                    >
+                                                        <Edit size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => setDetailsModal({type: 'quote', data: quote})}
+                                                        className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-brand-orange"
+                                                        title="Ver Detalles"
+                                                    >
+                                                        <Eye size={16} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => { if(confirm('Borrar cotización?')) deleteQuote(quote.id) }} 
+                                                        className="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-red-400"
+                                                        title="Eliminar"
+                                                    >
+                                                        <Trash2 size={16} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredQuotes.length === 0 && (
+                                        <tr>
+                                            <td colSpan="9" className="p-8 text-center text-slate-500">
+                                                No hay cotizaciones guardadas.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
                      </div>
                  )}
              </main>

@@ -234,6 +234,17 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    const updateQuote = async (id, updates) => {
+        try {
+            const docRef = doc(db, 'saved_quotes', id);
+            await updateDoc(docRef, updates);
+        } catch (error) {
+            console.error("Error updating quote:", error);
+            alert(`Error al actualizar cotización: ${error.code} - ${error.message}`);
+            throw error;
+        }
+    };
+
     // BULK IMPORT (Optional implementation for Firebase)
     const importDatabase = async (data) => {
         // Note: This would be expensive in valid reads/writes, implementing naive version
@@ -250,7 +261,7 @@ export const DataProvider = ({ children }) => {
             addOrder, updateOrderStatus, updateOrder, deleteOrder,
             addLead, updateLeadStatus,
             expenses, addExpense, deleteExpense,
-            quotes, addQuote, deleteQuote,
+            quotes, addQuote, deleteQuote, updateQuote,
             importDatabase
         }}>
             {children}

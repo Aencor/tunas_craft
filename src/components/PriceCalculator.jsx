@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { DollarSign, Clock, Zap, Hammer, Printer, Calculator, RefreshCw, Package, Save, Trash2, ArrowRight } from 'lucide-react';
 import { useData } from '../context/DataContext';
 
-const PriceCalculator = () => {
-    const { addQuote, quotes, deleteQuote } = useData();
+const PriceCalculator = ({ initialData, onCancel }) => {
+    const { addQuote, quotes, deleteQuote, updateQuote } = useData();
 
     // Default Presets
     const presets = {
@@ -14,7 +14,9 @@ const PriceCalculator = () => {
     };
 
     // State
+    const [editingId, setEditingId] = useState(null);
     const [partName, setPartName] = useState('');
+    const [category, setCategory] = useState(''); // New Category State
     const [filamentType, setFilamentType] = useState('PLA');
     const [filamentPrice, setFilamentPrice] = useState(400); // Price per Kg
     const [weight, setWeight] = useState(0); // Grams
@@ -33,6 +35,7 @@ const PriceCalculator = () => {
     
     const [profitMargin, setProfitMargin] = useState(200); // % (Markup)
     const [taxRate, setTaxRate] = useState(16); // % (IVA)
+    const [discount, setDiscount] = useState(0); // Discount %
 
     // Results
     const [costs, setCosts] = useState({
@@ -53,6 +56,11 @@ const PriceCalculator = () => {
         if (presets[type]) {
             setFilamentPrice(presets[type].price);
         }
+    };
+
+    // Round to nearest 5
+    const roundToFive = (num) => {
+        return Math.ceil(num / 5) * 5;
     };
 
     // Calculate Costs
@@ -83,11 +91,19 @@ const PriceCalculator = () => {
         // Profit
         const profit = subtotal * (profitMargin / 100);
 
-        // Taxes (On top of Price + Profit)
-        const preTaxTotal = subtotal + profit;
-        const tax = preTaxTotal * (taxRate / 100);
+        // Price Before Tax (Pre-Discount)
+        const basePrice = subtotal + profit;
 
-        const finalPrice = preTaxTotal + tax;
+        // Apply Discount to Base Price (Pre-Tax)
+        const priceAfterDiscount = basePrice * (1 - (discount / 100));
+
+        // Round the Pre-Tax Price
+        const roundedPriceNoTax = roundToFive(priceAfterDiscount);
+
+        // Taxes (On top of Rounded Discounted Price)
+        const tax = roundedPriceNoTax * (taxRate / 100);
+
+        const finalPrice = roundedPriceNoTax + tax;
 
         setCosts({
             material: materialCost,
@@ -97,39 +113,32 @@ const PriceCalculator = () => {
             failureMockup: failureCost,
             subtotal: subtotal,
             total: subtotal, // Production Cost
-            priceNoTax: preTaxTotal,
+            priceNoTax: roundedPriceNoTax, 
             suggested: finalPrice
         });
 
-    }, [filamentPrice, weight, timeHours, timeMinutes, powerRating, kwhCost, failureRate, laborTime, laborRate, printerRate, profitMargin, taxRate]);
+    }, [filamentPrice, weight, timeHours, timeMinutes, powerRating, kwhCost, failureRate, laborTime, laborRate, printerRate, profitMargin, taxRate, discount]);
+
+    // Load Initial Data for Editing
+    useEffect(() => {
+        if (initialData) {
+            loadQuote(initialData);
+            setEditingId(initialData.id);
+        }
+    }, [initialData]);
 
     const formatCurrency = (val) => {
         return new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
     };
 
-    const handleSaveQuote = async () => {
-        if (!partName.trim()) return alert('Ingresa un nombre para la pieza');
-        
-        try {
-            await addQuote({
-                name: partName,
-                params: {
-                    filamentType, filamentPrice, weight, timeHours, timeMinutes, 
-                    printerRate, failureRate, powerRating, kwhCost, laborTime, 
-                    laborRate, profitMargin, taxRate
-                },
-                costs // Save the calculated result too
-            });
-            alert('Cotización guardada');
-            setPartName('');
-        } catch (error) {
-            console.error(error);
-            alert('Error al guardar');
-        }
-    };
+    // handleSaveQuote removed in favor of handleSaveOrUpdate
 
     const loadQuote = (quote) => {
         setPartName(quote.name);
+        // Handle Array or String category
+        const cat = quote.category;
+        setCategory(Array.isArray(cat) ? cat.join(', ') : (cat || ''));
+        
         if(quote.params) {
             const p = quote.params;
             setFilamentType(p.filamentType || 'PLA');
@@ -145,6 +154,56 @@ const PriceCalculator = () => {
             setLaborRate(p.laborRate || 50);
             setProfitMargin(p.profitMargin || 100);
             setTaxRate(p.taxRate || 16);
+            setDiscount(p.discount || 0);
+        }
+    };
+
+    const handleCancelEdit = () => {
+        setEditingId(null);
+        setPartName('');
+        setCategory('');
+        setWeight(0);
+        setTimeHours(0);
+        setTimeMinutes(0);
+        setDiscount(0);
+        if (onCancel) onCancel();
+    };
+
+    const handleSaveOrUpdate = async () => {
+        if (!partName.trim()) return alert('Ingresa un nombre para la pieza');
+        
+        try {
+            // Split category by comma and trim
+            const categoryArray = category.split(',').map(c => c.trim()).filter(c => c);
+
+            const quoteData = {
+                name: partName,
+                category: categoryArray.length > 0 ? categoryArray : ['General'], // Default to array
+                params: {
+                    filamentType, filamentPrice, weight, timeHours, timeMinutes, 
+                    printerRate, failureRate, powerRating, kwhCost, laborTime, 
+                    laborRate, profitMargin, taxRate, discount
+                },
+                costs // Save the calculated result too
+            };
+
+            if (editingId) {
+                await updateQuote(editingId, quoteData);
+                alert('Cotización actualizada');
+            } else {
+                await addQuote(quoteData);
+                alert('Cotización guardada');
+            }
+
+            // Reset form if just adding, or maybe keep it? Default behavior: clear
+            setPartName('');
+            setCategory('');
+            setEditingId(null);
+            if(onCancel) onCancel(); // Clear parent state if editing
+
+        } catch (error) {
+            console.error(error);
+            alert('Error al guardar');
         }
     };
 
@@ -160,16 +219,33 @@ const PriceCalculator = () => {
                         <Package size={20} /> Material
                     </h3>
                     
-                    {/* Part Name Input (Merged) */}
-                    <div className="mb-4">
-                        <label className="block text-slate-400 text-xs font-bold uppercase mb-1">Nombre de la Pieza</label>
-                        <input 
-                            type="text" 
-                            value={partName} 
-                            onChange={e => setPartName(e.target.value)}
-                            placeholder="Ej. Soporte Monitor VESA"
-                            className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:border-brand-blue outline-none font-bold" 
-                        />
+                    <div className="mb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-slate-400 text-xs font-bold uppercase mb-1">Nombre de la Pieza</label>
+                            <input 
+                                type="text" 
+                                value={partName} 
+                                onChange={e => setPartName(e.target.value)}
+                                placeholder="Ej. Soporte Monitor VESA"
+                                className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:border-brand-blue outline-none font-bold" 
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-slate-400 text-xs font-bold uppercase mb-1">Categoría(s)</label>
+                            <input 
+                                type="text" 
+                                value={category} 
+                                onChange={e => setCategory(e.target.value)}
+                                placeholder="Ingeniería, Cosplay, Hogar..."
+                                list="categories-list"
+                                className="w-full bg-slate-900 border border-slate-600 rounded-lg px-4 py-2 text-white focus:border-brand-blue outline-none font-bold" 
+                            />
+                            <datalist id="categories-list">
+                                {[...new Set(quotes.flatMap(q => Array.isArray(q.category) ? q.category : [q.category]).filter(c => c))].map(c => (
+                                    <option key={c} value={c} />
+                                ))}
+                            </datalist>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -373,6 +449,20 @@ const PriceCalculator = () => {
                                     className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-slate-500" 
                                 />
                             </div>
+                            <div>
+                                <div className="flex justify-between mb-2">
+                                    <label className="text-slate-400 text-xs font-bold uppercase">Descuento %</label>
+                                    <span className="text-slate-300 font-bold">{discount}%</span>
+                                </div>
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="100" 
+                                    value={discount} 
+                                    onChange={e => setDiscount(parseFloat(e.target.value))}
+                                    className="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500" 
+                                />
+                            </div>
                         </div>
                         
                         <div className="text-center space-y-4">
@@ -395,11 +485,20 @@ const PriceCalculator = () => {
                                 </p>
                             </div>
                             <button 
-                                onClick={handleSaveQuote}
-                                className="w-full bg-brand-blue hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors"
+                                onClick={handleSaveOrUpdate}
+                                className={`w-full font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors ${editingId ? 'bg-brand-orange hover:bg-orange-600' : 'bg-brand-blue hover:bg-blue-600'} text-white`}
                             >
-                                <Save size={20} /> Guardar Cotización
+                                <Save size={20} /> {editingId ? 'Actualizar Cotización' : 'Guardar Cotización'}
                             </button>
+                            
+                            {editingId && (
+                                <button 
+                                    onClick={handleCancelEdit}
+                                    className="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-bold py-2 px-4 rounded-xl transition-colors"
+                                >
+                                    Cancelar Edición
+                                </button>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -428,7 +527,10 @@ const PriceCalculator = () => {
                         <tbody className="divide-y divide-slate-700">
                             {quotes.sort((a,b) => new Date(b.date) - new Date(a.date)).map(quote => (
                                 <tr key={quote.id} className="hover:bg-slate-700/30">
-                                    <td className="p-4 font-bold text-white">{quote.name}</td>
+                                    <td className="p-4 font-bold text-white">
+                                        {quote.name}
+                                        <div className="text-xs text-slate-500 font-normal">{quote.category || 'Sin categoría'}</div>
+                                    </td>
                                     <td className="p-4 text-sm text-slate-400">{new Date(quote.date).toLocaleDateString()}</td>
                                     <td className="p-4 text-sm text-slate-300">{quote.params?.weight}g</td>
                                     <td className="p-4 text-sm text-slate-300">{quote.params?.timeHours}h {quote.params?.timeMinutes}m</td>
