@@ -1,26 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Calculator, DollarSign, Clock, Scale, ArrowLeft, Percent } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import AdBanner from '../components/AdBanner';
 
 // --- AD SENSE COMPONENT (Reused for consistency) ---
-const AdBanner = ({ slotId, className = '' }) => {
-    useEffect(() => {
-        try {
-            if (window.adsbygoogle) console.log('AdSense Push'); 
-        } catch (e) {
-            console.error('AdSense Error', e);
-        }
-    }, []);
-
-    return (
-        <div className={`bg-slate-800/50 border border-slate-700/50 rounded-lg p-4 text-center my-6 ${className}`}>
-             <span className="text-xs text-slate-500 uppercase tracking-wider mb-2 block">Publicidad</span>
-             <div className="w-full h-24 bg-slate-700/30 flex items-center justify-center text-slate-500 text-sm">
-                 Espacio para Google AdSense
-             </div>
-        </div>
-    );
-};
+// Local AdBanner removed in favor of shared component
 
 const PublicManualQuote = () => {
     // Inputs

@@ -4,41 +4,12 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { OrbitControls, Center, Stage } from '@react-three/drei';
 import { Upload, Calculator, DollarSign, AlertCircle, X, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import Link from 'react-router-dom';
 import * as THREE from 'three';
+import AdBanner from '../components/AdBanner';
 
 // --- AD SENSE COMPONENT ---
-const AdBanner = ({ slotId, format = 'auto', className = '' }) => {
-    useEffect(() => {
-        try {
-            // Check if adsbygoogle is loaded
-            if (window.adsbygoogle) {
-                // (window.adsbygoogle = window.adsbygoogle || []).push({});
-                // Commented out to prevent errors in dev without real script
-                console.log('AdSense Push'); 
-            }
-        } catch (e) {
-            console.error('AdSense Error', e);
-        }
-    }, []);
-
-    return (
-        <div className={`bg-slate-800/50 border border-slate-700/50 rounded-lg p-4 text-center my-6 ${className}`}>
-             <span className="text-xs text-slate-500 uppercase tracking-wider mb-2 block">Publicidad</span>
-             {/* Replace with actual AdSense Ins code */}
-             <div className="w-full h-24 bg-slate-700/30 flex items-center justify-center text-slate-500 text-sm">
-                 Espacio para Google AdSense
-             </div>
-             {/* 
-             <ins className="adsbygoogle"
-                 style={{ display: 'block' }}
-                 data-ad-client="ca-pub-XXXXXXXXXXXXXXXX" // YOUR PUBLISHER ID
-                 data-ad-slot={slotId}
-                 data-ad-format={format}
-                 data-full-width-responsive="true"></ins> 
-             */}
-        </div>
-    );
-};
+// Local AdBanner removed in favor of shared component
 
 // --- 3D VIEWER COMPONENTS ---
 
