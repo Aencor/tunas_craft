@@ -44,6 +44,21 @@ app.post('/api/db', (req, res) => {
   res.json({ success: true, message: 'Saved successfully' });
 });
 
+app.get('/api/db/export', (req, res) => {
+  if (!fs.existsSync(DB_FILE)) {
+    return res.status(404).send('Database file not found');
+  }
+
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `tunas_craft_backup_${timestamp}.json`;
+
+  res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+  res.setHeader('Content-Type', 'application/json');
+
+  const fileStream = fs.createReadStream(DB_FILE);
+  fileStream.pipe(res);
+});
+
 app.listen(PORT, () => {
   console.log(`SERVER: Backend running on http://localhost:${PORT}`);
   console.log(`SERVER: Persistence file is ${DB_FILE}`);

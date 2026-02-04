@@ -304,6 +304,10 @@ const AdminDashboard = () => {
 
     // --- LOGIC ---
 
+    const handleBackUp = () => {
+        window.location.href = 'http://localhost:3001/api/db/export';
+    };
+
     const handleImport = (e) => {
         const file = e.target.files[0];
         if(!file) return;
@@ -779,6 +783,9 @@ Saludos, Tuna's Craft 🌵`;
                         <Upload size={14} /> Importar DB
                         <input type="file" className="hidden" accept=".json" onChange={handleImport} />
                     </label>
+                    <button onClick={handleBackUp} className="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded text-center items-center justify-center flex cursor-pointer gap-2 text-sm">
+                        <Download size={14} /> Exportar DB (Backup)
+                    </button>
                     <button onClick={handleGenerateShortIds} className="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded text-center items-center justify-center flex cursor-pointer gap-2 text-sm text-brand-orange">
                         <Upload size={14} /> Reparar DB (Short IDs)
                     </button>
