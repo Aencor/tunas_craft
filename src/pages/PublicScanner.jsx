@@ -4,7 +4,7 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { OrbitControls, Center, Stage } from '@react-three/drei';
 import { Upload, Calculator, DollarSign, AlertCircle, X, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import Link from 'react-router-dom';
+// Duplicate Link import removed
 import * as THREE from 'three';
 import AdBanner from '../components/AdBanner';
 
