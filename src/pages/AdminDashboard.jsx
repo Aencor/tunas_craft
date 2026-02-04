@@ -1366,7 +1366,8 @@ Saludos, Tuna's Craft 🌵`;
                                         <th className="p-4">Peso</th>
                                         <th className="p-4">Tiempo</th>
                                         <th className="p-4">Costo Prod.</th>
-                                        <th className="p-4 text-brand-orange font-bold">Precio Final</th>
+                                        <th className="p-4">Precio Sin IVA</th>
+                                        <th className="p-4 text-brand-orange font-bold">Precio Final (IVA Inc.)</th>
                                         <th className="p-4 text-center">Acciones</th>
                                     </tr>
                                 </thead>
@@ -1400,6 +1401,9 @@ Saludos, Tuna's Craft 🌵`;
                                             <td className="p-4 font-mono text-slate-400 text-xs">
                                                 {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(quote.costs?.total || 0)}
                                             </td>
+                                            <td className="p-4 font-mono text-slate-300 text-sm">
+                                                {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(quote.costs?.priceNoTax || 0)}
+                                            </td>
                                             <td className="p-4 font-mono font-bold text-brand-orange">
                                                 {new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(quote.costs?.suggested || 0)}
                                             </td>
@@ -1432,7 +1436,7 @@ Saludos, Tuna's Craft 🌵`;
                                     ))}
                                     {filteredQuotes.length === 0 && (
                                         <tr>
-                                            <td colSpan="9" className="p-8 text-center text-slate-500">
+                                            <td colSpan="10" className="p-8 text-center text-slate-500">
                                                 No hay cotizaciones guardadas.
                                             </td>
                                         </tr>

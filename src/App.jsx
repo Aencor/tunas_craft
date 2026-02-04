@@ -6,6 +6,8 @@ import Quote from './pages/Quote';
 import StoreSale from './pages/StoreSale';
 import OrderStatus from './pages/OrderStatus';
 import Catalog from './pages/Catalog';
+import PublicScanner from './pages/PublicScanner';
+import PublicManualQuote from './pages/PublicManualQuote';
 
 function App() {
   return (
@@ -18,6 +20,8 @@ function App() {
         <Route path="/catalogo" element={<Catalog />} />
         <Route path="/venta-tienda" element={<StoreSale />} />
         <Route path="/venta-fisica" element={<StoreSale />} />
+        <Route path="/cotizador" element={<PublicScanner />} />
+        <Route path="/calculadora" element={<PublicManualQuote />} />
       </Routes>
     </Router>
   );
