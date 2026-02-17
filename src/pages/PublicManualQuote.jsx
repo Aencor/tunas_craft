@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Calculator, DollarSign, Clock, Scale, ArrowLeft, Percent } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import AdBanner from '../components/AdBanner';
+import AdSense from '../components/AdSense';
+import { Zap, Droplets } from 'lucide-react';
 
 // --- AD SENSE COMPONENT (Reused for consistency) ---
 // Local AdBanner removed in favor of shared component
@@ -14,14 +15,15 @@ const PublicManualQuote = () => {
     const [minutes, setMinutes] = useState('');
     const [profitMargin, setProfitMargin] = useState(200); // Default Margin
     const [filamentPrice, setFilamentPrice] = useState(400); // Price per Kg
+    const [watts, setWatts] = useState(150); // Watts
+    const [kwhCost, setKwhCost] = useState(2.5); // $ per kWh
+    const [otherCosts, setOtherCosts] = useState(0); // $ Misc materials
 
     const [price, setPrice] = useState(0);
 
     // --- CONFIGURATION CONSTANTS (HIDDEN FROM UI) ---
     // These should mimic the "standard" defaults from the admin calculator
     const SETTINGS = {
-        powerRating: 150, // Watts
-        kwhCost: 2.5, // $
         laborRate: 50, // $/h
         laborTime: 15, // mins (post-processing average)
         printerRate: 5, // $/h (maintenance)
@@ -58,7 +60,8 @@ const PublicManualQuote = () => {
         const totalHours = h + (m / 60);
 
         // 3. Electricity
-        const electricityCost = (SETTINGS.powerRating * totalHours / 1000) * SETTINGS.kwhCost;
+        // Formula: (Watts * Hours_Total / 1000) * Cost_kWh
+        const electricityCost = (parseFloat(watts) * totalHours / 1000) * parseFloat(kwhCost);
 
         // 4. Labor (Fixed time per print for estimate)
         const laborCost = (SETTINGS.laborTime / 60) * SETTINGS.laborRate;
@@ -67,7 +70,7 @@ const PublicManualQuote = () => {
         const machineCost = totalHours * SETTINGS.printerRate;
 
         // 6. Subtotal
-        let subtotal = materialCost + electricityCost + laborCost + machineCost;
+        let subtotal = materialCost + electricityCost + laborCost + machineCost + parseFloat(otherCosts || 0);
 
         // 7. Failure Rate
         subtotal += subtotal * (SETTINGS.failureRate / 100);
@@ -85,7 +88,7 @@ const PublicManualQuote = () => {
 
         setPrice(finalPrice);
 
-    }, [weight, hours, minutes, material, profitMargin, filamentPrice]);
+    }, [weight, hours, minutes, material, profitMargin, filamentPrice, watts, kwhCost, otherCosts]);
 
     const formatCurrency = (val) => new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(val);
 
@@ -104,7 +107,7 @@ const PublicManualQuote = () => {
             </header>
 
             <main className="max-w-4xl mx-auto px-4 py-8">
-                <AdBanner slotId="MANUAL_TOP" />
+                <AdSense slot="1234567890" />
 
                 <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
                     <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -221,6 +224,51 @@ const PublicManualQuote = () => {
                                 />
                             </div>
 
+                            {/* Energy Costs */}
+                            <div>
+                                <h3 className="text-slate-400 text-xs font-bold uppercase mb-2 flex items-center gap-2">
+                                    <Zap size={14} className="text-yellow-400" /> Energía
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-gray-500 text-[10px] uppercase mb-1">Consumo (Watts)</label>
+                                        <input 
+                                            type="number" 
+                                            value={watts}
+                                            onChange={e => setWatts(e.target.value)}
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 outline-none text-sm transition-all text-center"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-gray-500 text-[10px] uppercase mb-1">Costo kWh ($)</label>
+                                        <input 
+                                            type="number" 
+                                            value={kwhCost}
+                                            onChange={e => setKwhCost(e.target.value)}
+                                            className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white placeholder-slate-600 focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 outline-none text-sm transition-all text-center"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Other Costs */}
+                            <div>
+                                <label className="block text-slate-400 text-xs font-bold uppercase mb-2 flex items-center gap-2">
+                                    <Droplets size={14} className="text-blue-400" /> Otros Materiales / Post-Proceso
+                                </label>
+                                <div className="relative group">
+                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">$</span>
+                                    <input 
+                                        type="number" 
+                                        value={otherCosts}
+                                        onChange={e => setOtherCosts(e.target.value)}
+                                        placeholder="0.00"
+                                        className="w-full bg-slate-900 border border-slate-700 rounded-xl pl-10 pr-4 py-3 text-white placeholder-slate-600 focus:border-blue-400 focus:ring-1 focus:ring-blue-400 outline-none transition-all font-mono"
+                                    />
+                                </div>
+                                <p className="text-[10px] text-gray-500 mt-1">Alcohol, guantes, lija, pegamento, pintura, etc.</p>
+                            </div>
+
                         </div>
 
                         {/* RESULTS */}
@@ -262,7 +310,7 @@ const PublicManualQuote = () => {
                     </div>
                 </div>
 
-                <AdBanner slotId="MANUAL_BOTTOM" />
+                <AdSense slot="0987654321" />
 
             </main>
         </div>

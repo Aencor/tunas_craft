@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Hero3D from '../components/Hero3D';
-import { Menu, X, Instagram, Facebook, Ruler, Palette, Home, Package } from 'lucide-react';
+import AdSense from '../components/AdSense';
+import { Menu, X, Instagram, Facebook, Ruler, Palette, Home, Package, HelpCircle, User } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useGallery } from '../hooks/useGallery';
 
@@ -117,6 +118,69 @@ const Landing = () => {
                 <ServiceCard icon={<Home size={40} className="text-purple-500" />} title="Decoración" desc="Macetas, lámparas, litofanías y regalos únicos para darle vida a tus espacios." />
             </div>
         </div>
+      </section>
+
+      {/* About Us */}
+      <section className="py-24 bg-brand-dark relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-brand-blue/5 to-transparent pointer-events-none"></div>
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+              <div className="inline-flex items-center justify-center p-3 bg-brand-orange/10 rounded-full mb-6 text-brand-orange">
+                  <User size={32} />
+              </div>
+              <h2 className="font-display text-4xl font-bold mb-6">Sobre <span className="text-brand-orange">Nosotros</span></h2>
+              <div className="prose prose-invert prose-lg mx-auto text-gray-300 leading-relaxed">
+                  <p className="mb-6">
+                      En <strong>Tuna's Craft</strong>, somos apasionados de la tecnología y el arte. Nacimos con la misión de 
+                      transformar ideas digitales en objetos tangibles de alta calidad. Desde figuras coleccionables 
+                      hasta prototipos funcionales, cada capa que imprimimos lleva nuestra dedicación y precisión.
+                  </p>
+                  <p>
+                      Utilizamos tecnología de impresión 3D de última generación (FDM y Resina) para garantizar 
+                      acabados suaves y detalles impresionantes. Nuestro compromiso es ofrecerte no solo un producto, 
+                      sino una experiencia creativa única, apoyándote desde el diseño hasta la entrega final.
+                  </p>
+              </div>
+          </div>
+      </section>
+
+      {/* AdSense Zone 1 */}
+      <div className="container mx-auto px-4 max-w-4xl">
+        <AdSense slot="1234567890" /> {/* Replace with actual slot ID if available, or keep generic for auto ads to pick up */}
+      </div>
+
+      {/* FAQ */}
+      <section className="py-24 bg-slate-900/50">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-16">
+                  <h2 className="font-display text-3xl font-bold mb-4 flex items-center justify-center gap-3">
+                      <HelpCircle className="text-brand-blue" /> Preguntas Frecuentes
+                  </h2>
+                  <p className="text-gray-400">Todo lo que necesitas saber antes de pedir.</p>
+              </div>
+
+              <div className="space-y-6">
+                  <FAQItem 
+                      question="¿Hacen envíos a todo México?" 
+                      answer="Sí, realizamos envíos seguros a cualquier parte de la República Mexicana. El costo depende del volumen de tu pedido y tu código postal. Generalmente utilizamos paqueterías como FedEx, DHL o Estafeta para garantizar que tu pieza llegue intacta." 
+                  />
+                  <FAQItem 
+                      question="¿Qué materiales utilizan?" 
+                      answer="Trabajamos principalmente con PLA (plástico biodegradable derivado del maíz) para impresiones estándar por su versatilidad y resistencia. Para figuras de alto detalle (miniaturas, joyería), utilizamos Resina UV de alta resolución que captura hasta el más mínimo detalle." 
+                  />
+                  <FAQItem 
+                      question="¿Pueden pintar las figuras?" 
+                      answer="¡Claro! Ofrecemos el servicio de post-procesado y pintura a mano. Puedes pedir tu figura en 'crudo' (solo impresa y limpia) o completamente terminada y pintada por nuestros artistas. El costo varía según la complejidad del esquema de color." 
+                  />
+                  <FAQItem 
+                      question="¿Cómo solicito una cotización personalizada?" 
+                      answer="Es muy fácil. Ve a la sección de 'Cotizar Ahora' en nuestro menú, sube tu archivo STL si lo tienes, o descríbenos tu idea. Si no tienes el modelo 3D, nosotros podemos ayudarte a encontrarlo o modelarlo para ti." 
+                  />
+                  <FAQItem 
+                      question="¿Cuánto tiempo tarda mi pedido?" 
+                      answer="El tiempo de producción depende del tamaño y complejidad de la pieza, así como de nuestra carga de trabajo actual. Un pedido promedio toma entre 3 a 5 días hábiles. Para trabajos urgentes, contáctanos directamente para verificar disponibilidad." 
+                  />
+              </div>
+          </div>
       </section>
 
       {/* Delivery Section (Design Match) */}
@@ -291,5 +355,16 @@ const SocialLink = ({ href, icon, label }) => (
         <span className="text-xs font-medium">{label}</span>
     </a>
 )
+
+const FAQItem = ({ question, answer }) => (
+    <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-6 hover:bg-slate-800 transition-colors">
+        <h3 className="text-lg font-bold text-white mb-2 flex items-start gap-2">
+            <span className="text-brand-orange mt-1">Q:</span> {question}
+        </h3>
+        <p className="text-gray-400 pl-6 text-sm leading-relaxed">
+            {answer}
+        </p>
+    </div>
+);
 
 export default Landing;
