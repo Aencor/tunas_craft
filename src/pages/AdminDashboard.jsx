@@ -12,7 +12,7 @@ import PriceCalculator from '../components/PriceCalculator';
 const AdminDashboard = () => {
     const { 
         clients, orders, leads, user, loadingAuth, login, logout, 
-        addClient, updateClient, 
+        addClient, updateClient, deleteClient,
         addOrder, updateOrder, updateOrderStatus, deleteOrder,
         addLead, updateLead, deleteLead,
         expenses, addExpense, deleteExpense,
@@ -53,6 +53,7 @@ const AdminDashboard = () => {
     const [orderItems, setOrderItems] = useState([{ desc: '', qty: 1, price: 0 }]);
     const [orderTotal, setOrderTotal] = useState(0);
     const [editingOrderId, setEditingOrderId] = useState(null);
+    const [clientSearchNewOrder, setClientSearchNewOrder] = useState('');
 
     // Calculate total whenever items change
     useMemo(() => {
@@ -61,6 +62,7 @@ const AdminDashboard = () => {
     }, [orderItems]);
 
     // Filters
+    const [dashboardTimeRange, setDashboardTimeRange] = useState('all');
     const [leadFilter, setLeadFilter] = useState({ status: 'all', clientId: '' });
     const [clientQuery, setClientQuery] = useState('');
     const [leadsPage, setLeadsPage] = useState(0);
@@ -68,7 +70,7 @@ const AdminDashboard = () => {
 
     // Order Filters
     const [orderFilter, setOrderFilter] = useState({ status: 'all', search: '' });
-    const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' }); // Sort State
+    const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' }); // Sort State
     const [expenseFilter, setExpenseFilter] = useState({ date: '', method: 'all' }); // Expense Filter State
     const [clientSortConfig, setClientSortConfig] = useState({ key: 'name', direction: 'asc' }); // Client Sort State
     
@@ -354,6 +356,16 @@ const AdminDashboard = () => {
     const handleCreateClient = (e) => {
         e.preventDefault();
         const data = new FormData(e.target);
+        
+        const phone = data.get('phone');
+        if (phone && phone.trim() !== '') {
+            const existingClient = clients.find(c => c.phone === phone);
+            if (existingClient) {
+                alert(`Error: Ya existe un cliente registrado con el número de teléfono ${phone} (${existingClient.name}).`);
+                return;
+            }
+        }
+        
         const street = data.get('street');
         const colony = data.get('colony');
         const zip = data.get('zip');
@@ -575,18 +587,28 @@ const AdminDashboard = () => {
                 const utf8Zip = formData.get('newClientZip');
                 const state = formData.get('newClientState');
                 const phone = formData.get('newClientPhone');
+                
+                if (phone && phone.trim() !== '') {
+                    const existingClient = clients.find(c => c.phone === phone);
+                    if (existingClient) {
+                        alert(`Ya existe un cliente con el teléfono ${phone} (${existingClient.name}). Se asignará este pedido al cliente existente para evitar duplicados.`);
+                        finalClientId = existingClient.id;
+                    }
+                }
 
-                const fullAddress = `${street}, Col. ${colony}, ${utf8Zip}, ${state}`;
+                if (finalClientId === 'new') {
+                    const fullAddress = `${street}, Col. ${colony}, ${utf8Zip}, ${state}`;
 
-                const newClient = await addClient({ 
-                    name, 
-                    email: contact, // Keeping email as contact for legacy, but we have phone now
-                    phone,
-                    type, 
-                    address: fullAddress,
-                    street, colony, zip: utf8Zip, state
-                }); 
-                finalClientId = newClient.id;
+                    const newClient = await addClient({ 
+                        name, 
+                        email: contact, // Keeping email as contact for legacy, but we have phone now
+                        phone,
+                        type, 
+                        address: fullAddress,
+                        street, colony, zip: utf8Zip, state
+                    }); 
+                    finalClientId = newClient.id;
+                }
             }
             
             // Validations
@@ -608,7 +630,7 @@ const AdminDashboard = () => {
                 status: 'pedido', // Default, logic in context preserves or overwrites
                 date: new Date().toLocaleDateString('es-MX'),
                 deadline: formData.get('deadline'), // New Field
-                evidenceLink: formData.get('evidenceLink') // New Field
+                // Removed evidenceLink, replacing via image uploads below
             };
 
             let targetOrderId = editingOrderId;
@@ -624,11 +646,34 @@ const AdminDashboard = () => {
                 // Create New
                 const newOrder = await addOrder(orderData);
                 targetOrderId = newOrder.id;
+                
+                // Auto send WhatsApp message for the new order
+                const selectedClient = clients.find(c => c.id === finalClientId) || { name: formData.get('newClientName'), phone: formData.get('newClientPhone') };
+                const clientPhone = selectedClient.phone;
+                
+                if (clientPhone) {
+                    const cleanPhone = clientPhone.replace(/\D/g, '');
+                    const statusLink = `${window.location.origin}/status`; 
+                    const itemsList = orderData.items.map(i => `- ${i.qty}x ${i.desc}`).join('\n');
+                    
+                    const message = `¡Hola ${selectedClient.name || 'Cliente'}! Tu pedido ha sido confirmado en Tuna's Craft 🌵\n\nResumen de tu pedido:\n${itemsList}\nTotal: $${orderData.total}\nAnticipo: $${orderData.advance}\nRestante: $${orderData.remaining}\n\nPuedes revisar el estatus de tu pedido aquí: ${statusLink}\n\n¡Gracias por tu preferencia!`;
+                    
+                    const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+                    window.open(url, '_blank');
+                }
             }
 
-        // Handle Image Upload from Form
-        const imageFile = formData.get('orderImage');
-        if (imageFile && imageFile.size > 0) {
+        // Handle MULTIPLE Image Uploads from Form (Evidences)
+        const imageFiles = formData.getAll('evidenceImages');
+        const uploadedImages = [];
+        
+        // Also keep track of the singular orderImage just in case they used it
+        const singletonImage = formData.get('orderImage');
+        if (singletonImage && singletonImage.size > 0) {
+            imageFiles.push(singletonImage);
+        }
+
+        if (imageFiles.length > 0) {
             try {
                  const options = {
                     maxSizeMB: 1, 
@@ -636,25 +681,41 @@ const AdminDashboard = () => {
                     useWebWorker: true,
                     fileType: 'image/webp'
                 };
-                const compressedFile = await imageCompression(imageFile, options);
                 
-                // Upload
-                const fileRef = ref(storage, `orders/${targetOrderId}/${Date.now()}_${imageFile.name}`);
-                await uploadBytes(fileRef, compressedFile);
-                const downloadURL = await getDownloadURL(fileRef);
+                for (let imageFile of imageFiles) {
+                    if (imageFile.size === 0) continue;
+                    const compressedFile = await imageCompression(imageFile, options);
+                    
+                    // Upload each file
+                    const fileRef = ref(storage, `orders/${targetOrderId}/evidence_${Date.now()}_${imageFile.name}`);
+                    await uploadBytes(fileRef, compressedFile);
+                    const downloadURL = await getDownloadURL(fileRef);
+                    uploadedImages.push(downloadURL);
+                }
 
-                // Update Order with Image
-                await updateOrder(targetOrderId, { progressImage: downloadURL });
+                if (uploadedImages.length > 0) {
+                    // Update Order with Image(s)
+                    // If progressImage already exists (from editing), append or replace based on logic
+                    // For simplicity, we store the first as progressImage and all in evidenceImages array
+                    const existingOrder = editingOrderId ? orders.find(o => o.id === editingOrderId) : {};
+                    const newEvidenceArray = [...(existingOrder.evidenceImages || []), ...uploadedImages];
+                    
+                    await updateOrder(targetOrderId, { 
+                        progressImage: uploadedImages[0], // Keep backward compatibility for main image
+                        evidenceImages: newEvidenceArray 
+                    });
+                }
 
             } catch (err) {
-                console.error("Error uploading form image:", err);
-                alert("El pedido se guardó pero hubo un error subiendo la imagen.");
+                console.error("Error uploading form images:", err);
+                alert("El pedido se guardó pero hubo un error subiendo las imágenes de evidencia.");
             }
         }
         
         setNewOrderModal(false);
         setEditingOrderId(null);
         setOrderItems([{ desc: '', qty: 1, price: 0 }]); // Reset
+        setClientSearchNewOrder('');
 
         } catch (error) {
             console.error("Error saving order:", error);
@@ -667,6 +728,7 @@ const AdminDashboard = () => {
     const handleEditOrder = (order) => {
         setEditingOrderId(order.id);
         setOrderItems(order.items || []);
+        setClientSearchNewOrder('');
         
         // Wait for modal to open to set form values? No, we can just open it.
         // We'll need to set defaultValue of inputs or control them.
@@ -724,13 +786,52 @@ Saludos, Tuna's Craft 🌵`;
     };
 
     // Derived State for Dashboard
-    const totalSales = orders.reduce((sum, o) => sum + parseFloat(o.total || 0), 0);
-    const totalPaid = orders.reduce((sum, o) => sum + parseFloat(o.advance || 0), 0);
-    const totalReceivable = orders.reduce((sum, o) => sum + parseFloat(o.remaining || (o.total - (o.advance||0)) || 0), 0);
-    const totalExpenses = expenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
+    const filterByTimeRange = (items, range, dateField = 'date') => {
+        if (range === 'all') return items;
+        
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        
+        const startOfWeek = new Date(startOfToday);
+        const day = startOfWeek.getDay() || 7; 
+        if (day !== 1) startOfWeek.setHours(-24 * (day - 1));
+
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+        return items.filter(item => {
+            if (!item[dateField]) return false;
+            let dateObj;
+            if (item[dateField].includes('/')) {
+                const parts = item[dateField].split('/');
+                const d = parts[0].padStart(2, '0');
+                const m = parts[1].padStart(2, '0');
+                const y = parts[2];
+                // Use a standard format that Date parses reliably
+                dateObj = new Date(`${y}-${m}-${d}T00:00:00`);
+            } else {
+                dateObj = new Date(item[dateField]);
+            }
+
+            if (range === 'day') return dateObj >= startOfToday;
+            if (range === 'week') return dateObj >= startOfWeek;
+            if (range === 'month') return dateObj >= startOfMonth;
+            return true;
+        });
+    };
+
+    const dashboardOrders = filterByTimeRange(orders, dashboardTimeRange);
+    const dashboardExpenses = filterByTimeRange(expenses, dashboardTimeRange);
+
+    const totalSales = dashboardOrders.reduce((sum, o) => sum + parseFloat(o.total || 0), 0);
+    const totalPaid = dashboardOrders.reduce((sum, o) => sum + parseFloat(o.advance || 0), 0);
+    const totalReceivable = dashboardOrders.reduce((sum, o) => sum + parseFloat(o.remaining || (o.total - (o.advance||0)) || 0), 0);
+    const totalExpenses = dashboardExpenses.reduce((sum, e) => sum + parseFloat(e.amount || 0), 0);
     const netProfit = totalSales - totalExpenses;
-    const activeQuotes = leads.filter(l => l.status === 'Nuevo' || l.status === 'Pendiente').length;
-    const rejectedQuotes = leads.filter(l => l.status === 'Rechazada').length;
+    
+    // We can also filter quotes using the same logic, or leave all active/rejected globally
+    const dashboardLeads = filterByTimeRange(leads, dashboardTimeRange);
+    const activeQuotes = dashboardLeads.filter(l => l.status === 'Nuevo' || l.status === 'Pendiente').length;
+    const rejectedQuotes = dashboardLeads.filter(l => l.status === 'Rechazada').length;
 
     // Derived State for Leads
     const filteredLeads = leads.filter(l => {
@@ -802,7 +903,19 @@ Saludos, Tuna's Craft 🌵`;
                  {/* Dashboard */}
                  {activeTab === 'dashboard' && (
                      <div className="space-y-6">
-                         <h2 className="text-3xl font-display font-bold">Resumen</h2>
+                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                             <h2 className="text-3xl font-display font-bold">Resumen</h2>
+                             <select
+                                 className="bg-slate-800 border border-slate-600 rounded-lg p-2 text-sm focus:outline-none focus:border-brand-blue"
+                                 value={dashboardTimeRange}
+                                 onChange={(e) => setDashboardTimeRange(e.target.value)}
+                             >
+                                 <option value="all">Historico (Todo)</option>
+                                 <option value="day">Hoy</option>
+                                 <option value="week">Esta Semana</option>
+                                 <option value="month">Este Mes</option>
+                             </select>
+                         </div>
                          
                          {/* KPIs */}
                          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -817,7 +930,45 @@ Saludos, Tuna's Craft 🌵`;
                          </div>
 
                          {/* Chart */}
-                         <SalesChart orders={orders} />
+                         <SalesChart orders={dashboardOrders} />
+
+                         {/* Filtered Orders List */}
+                         <div className="bg-slate-800 rounded-xl border border-slate-700 p-6">
+                            <h3 className="text-xl font-bold mb-4">Lista de Pedidos ({dashboardOrders.length})</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left min-w-[600px]">
+                                    <thead className="bg-slate-700/50 text-slate-300">
+                                        <tr>
+                                            <th className="p-4">ID</th>
+                                            <th className="p-4">Cliente</th>
+                                            <th className="p-4">Fecha Creado</th>
+                                            <th className="p-4 text-center">Estatus</th>
+                                            <th className="p-4 text-right">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-700">
+                                        {dashboardOrders.slice().sort((a,b) => b.id.localeCompare(a.id)).map(order => (
+                                            <tr key={order.id} className="hover:bg-slate-700/30">
+                                                <td className="p-4 text-xs text-slate-500">#{order.id.slice(-4)}</td>
+                                                <td className="p-4 font-bold">{order.client || clients.find(c => c.id === order.clientId)?.name || 'Desconocido'}</td>
+                                                <td className="p-4 text-sm text-slate-400">{order.date}</td>
+                                                <td className="p-4 text-center">
+                                                    <span className={`text-xs px-2 py-1 rounded border font-bold ${getStatusColor(order.status)}`}>
+                                                        {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-right font-bold text-brand-orange">${order.total}</td>
+                                            </tr>
+                                        ))}
+                                        {dashboardOrders.length === 0 && (
+                                            <tr>
+                                                <td colSpan="5" className="p-4 text-center text-slate-500">No hay pedidos en este periodo.</td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                         </div>
                      </div>
                  )}
 
@@ -1467,6 +1618,13 @@ Saludos, Tuna's Craft 🌵`;
                             {/* Client Section */}
                             <div className="bg-black/20 p-4 rounded-xl">
                                 <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Cliente</label>
+                                <input
+                                    type="text"
+                                    placeholder="Buscar cliente (nombre o teléfono)..."
+                                    value={clientSearchNewOrder}
+                                    onChange={(e) => setClientSearchNewOrder(e.target.value)}
+                                    className="w-full bg-slate-800 border border-slate-600 rounded p-2 mb-2 text-sm focus:outline-none focus:border-brand-blue"
+                                />
                                 <select 
                                     name="clientId" 
                                     defaultValue={editingOrderId ? orders.find(o => o.id === editingOrderId)?.clientId : ""}
@@ -1486,7 +1644,9 @@ Saludos, Tuna's Craft 🌵`;
                                 >
                                     <option value="">-- Seleccionar Cliente --</option>
                                     <option value="new">+ Crear Nuevo Cliente</option>
-                                    {clients.map(c => <option key={c.id} value={c.id}>{c.name} ({c.type})</option>)}
+                                    {clients
+                                        .filter(c => !clientSearchNewOrder || c.name.toLowerCase().includes(clientSearchNewOrder.toLowerCase()) || (c.phone && c.phone.includes(clientSearchNewOrder)))
+                                        .map(c => <option key={c.id} value={c.id}>{c.name} ({c.type})</option>)}
                                 </select>
 
                                 {/* Inline New Client Fields */}
@@ -1598,14 +1758,19 @@ Saludos, Tuna's Craft 🌵`;
                                         required
                                     ></textarea>
 
-                                    <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Link de Evidencia (Drive/Fotos)</label>
+                                    <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Imágenes de Evidencia</label>
                                     <input 
-                                        name="evidenceLink" 
-                                        type="url"
-                                        placeholder="https://drive.google.com/..."
-                                        defaultValue={editingOrderId ? orders.find(o => o.id === editingOrderId)?.evidenceLink : ""}
-                                        className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-blue-400" 
+                                        name="evidenceImages" 
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        className="w-full text-sm text-slate-500 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-blue file:text-white hover:file:bg-blue-600 cursor-pointer" 
                                     />
+                                    {editingOrderId && orders.find(o => o.id === editingOrderId)?.evidenceImages?.length > 0 && (
+                                        <p className="text-xs text-brand-orange mt-2">
+                                            Este pedido ya tiene {orders.find(o => o.id === editingOrderId).evidenceImages.length} imagen(es) subida(s). Las nuevas se agregarán.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1613,7 +1778,7 @@ Saludos, Tuna's Craft 🌵`;
                         <div className="flex justify-end gap-3 mt-6 border-t border-slate-700 pt-4">
                             <button 
                                 type="button" 
-                                onClick={() => setNewOrderModal(false)} 
+                                onClick={() => { setNewOrderModal(false); setClientSearchNewOrder(''); }} 
                                 className="text-slate-400 hover:text-white"
                                 disabled={isSubmitting}
                             >
@@ -1851,18 +2016,33 @@ Saludos, Tuna's Craft 🌵`;
 
                              {/* Col 2: Images */}
                              <div className="space-y-4">
-                                 {detailsModal.data.progressImage && (
+                                 {/* First render the legacy progressImage if it exists */}
+                                 {detailsModal.data.progressImage && !detailsModal.data.evidenceImages && (
                                      <div>
                                          <h4 className="text-xs uppercase text-gray-500 font-bold mb-2">Evidencia / Progreso</h4>
-                                         <img src={detailsModal.data.progressImage} className="w-full rounded-xl border border-slate-600" />
+                                         <img src={detailsModal.data.progressImage} className="w-full rounded-xl border border-slate-600 mb-4" />
+                                     </div>
+                                 )}
+
+                                 {/* Render the new array of evidence images */}
+                                 {detailsModal.data.evidenceImages && detailsModal.data.evidenceImages.length > 0 && (
+                                     <div>
+                                         <h4 className="text-xs uppercase text-gray-500 font-bold mb-2">Imágenes de Evidencia</h4>
+                                         <div className="grid grid-cols-2 gap-2">
+                                             {detailsModal.data.evidenceImages.map((src, idx) => (
+                                                <a key={idx} href={src} target="_blank" rel="noopener noreferrer" className="block">
+                                                    <img src={src} className="w-full h-32 object-cover rounded-xl border border-slate-600 hover:opacity-80 transition-opacity" />
+                                                </a>
+                                             ))}
+                                         </div>
                                      </div>
                                  )}
                                  
                                  {/* Reference Image from Quote */}
                                  {detailsModal.data.refType === 'link' && detailsModal.data.refLink && (
                                      <div>
-                                         <h4 className="text-xs uppercase text-gray-500 font-bold mb-2">Referencia</h4>
-                                         <a href={detailsModal.data.refLink} target="_blank" className="text-brand-blue underline break-all text-sm">{detailsModal.data.refLink}</a>
+                                         <h4 className="text-xs uppercase text-gray-500 font-bold mb-2 mt-4">Referencia</h4>
+                                         <a href={detailsModal.data.refLink} target="_blank" rel="noopener noreferrer" className="text-brand-blue underline break-all text-sm">{detailsModal.data.refLink}</a>
                                      </div>
                                  )}
                              </div>
