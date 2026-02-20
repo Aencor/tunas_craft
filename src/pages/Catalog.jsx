@@ -14,6 +14,17 @@ const Catalog = () => {
         ? products 
         : products.filter(p => p.category === activeCategory);
 
+    // Google Drive URL parser for thumbnails
+    const getGoogleDriveImage = (url) => {
+        if (!url) return '';
+        const driveRegex = /(?:\/d\/|id=)([a-zA-Z0-9_-]+)/;
+        const match = url.match(driveRegex);
+        if (match && match[1]) {
+            return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+        }
+        return url;
+    };
+
     return (
         <div className="bg-brand-dark min-h-screen text-slate-100 font-sans pb-16">
             
@@ -52,12 +63,12 @@ const Catalog = () => {
                         {filteredProducts.map((product, idx) => (
                             <div 
                                 key={idx}
-                                onClick={() => setLightboxSrc(product.image)}
+                                onClick={() => setLightboxSrc(getGoogleDriveImage(product.image))}
                                 className="group relative overflow-hidden rounded-2xl shadow-xl aspect-square bg-gray-900 cursor-pointer hover:shadow-2xl hover:shadow-brand-blue/10 transition-all hover:scale-[1.02] border border-white/5"
                             >
                                 <div 
                                     className="w-full h-full bg-cover bg-center group-hover:scale-110 transition-transform duration-500"
-                                    style={{ backgroundImage: `url('${product.image}')` }}
+                                    style={{ backgroundImage: `url('${getGoogleDriveImage(product.image)}')` }}
                                 />
                                 
                                 {/* Badge */}

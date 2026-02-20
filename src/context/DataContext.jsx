@@ -14,6 +14,7 @@ export const DataProvider = ({ children }) => {
     const [leads, setLeads] = useState([]);
     const [expenses, setExpenses] = useState([]);
     const [quotes, setQuotes] = useState([]);
+    const [products, setProducts] = useState([]); // New state for products
     const [user, setUser] = useState(null);
     const [loadingAuth, setLoadingAuth] = useState(true);
 
@@ -23,6 +24,7 @@ export const DataProvider = ({ children }) => {
     const leadsCollection = collection(db, 'leads');
     const expensesCollection = collection(db, 'expenses');
     const quotesCollection = collection(db, 'saved_quotes');
+    const productsCollection = collection(db, 'products'); // New collection
 
     // Auth & Listeners
     useEffect(() => {
@@ -47,6 +49,9 @@ export const DataProvider = ({ children }) => {
                 const unsubQuotes = onSnapshot(quotesCollection, (snapshot) => {
                     setQuotes(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
                 });
+                const unsubProducts = onSnapshot(productsCollection, (snapshot) => {
+                    setProducts(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+                });
 
                 return () => {
                     unsubClients();
@@ -54,6 +59,7 @@ export const DataProvider = ({ children }) => {
                     unsubLeads();
                     unsubExpenses();
                     unsubQuotes();
+                    unsubProducts();
                 };
             } else {
                 // Clear state on logout
@@ -62,6 +68,7 @@ export const DataProvider = ({ children }) => {
                 setLeads([]);
                 setExpenses([]);
                 setQuotes([]);
+                setProducts([]);
             }
         });
 
@@ -245,6 +252,44 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    // PRODUCTS
+    const addProduct = async (product) => {
+        try {
+            const newProduct = {
+                ...product,
+                createdAt: new Date().toISOString()
+            };
+            const docRef = await addDoc(productsCollection, newProduct);
+            return { ...newProduct, id: docRef.id };
+        } catch (error) {
+            console.error("Error adding product:", error);
+            alert(`Error guardando producto: ${error.code} - ${error.message}`);
+            throw error;
+        }
+    };
+
+    const updateProduct = async (id, updates) => {
+        try {
+            const docRef = doc(db, 'products', id);
+            await updateDoc(docRef, updates);
+        } catch (error) {
+            console.error("Error updating product:", error);
+            alert(`Error al actualizar producto: ${error.code} - ${error.message}`);
+            throw error;
+        }
+    };
+
+    const deleteProduct = async (id) => {
+        try {
+            const docRef = doc(db, 'products', id);
+            await deleteDoc(docRef);
+        } catch (error) {
+            console.error("Error deleting product:", error);
+            alert(`Error al eliminar producto: ${error.code} - ${error.message}`);
+            throw error;
+        }
+    };
+
     // BULK IMPORT (Optional implementation for Firebase)
     const importDatabase = async (data) => {
         // Note: This would be expensive in valid reads/writes, implementing naive version
@@ -262,6 +307,7 @@ export const DataProvider = ({ children }) => {
             addLead, updateLeadStatus,
             expenses, addExpense, deleteExpense,
             quotes, addQuote, deleteQuote, updateQuote,
+            products, addProduct, updateProduct, deleteProduct,
             importDatabase
         }}>
             {children}

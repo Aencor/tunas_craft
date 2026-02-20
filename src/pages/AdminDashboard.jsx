@@ -16,7 +16,8 @@ const AdminDashboard = () => {
         addOrder, updateOrder, updateOrderStatus, deleteOrder,
         addLead, updateLead, deleteLead,
         expenses, addExpense, deleteExpense,
-        quotes, deleteQuote, updateQuote
+        quotes, deleteQuote, updateQuote,
+        products, addProduct, updateProduct, deleteProduct
     } = useData();
 
     // Helper for status colors
@@ -47,6 +48,9 @@ const AdminDashboard = () => {
     const [detailsModal, setDetailsModal] = useState(null); // { type: 'order' | 'quote', data: object }
     const [editClientModal, setEditClientModal] = useState(null); // { client }
     const [clientHistoryModal, setClientHistoryModal] = useState(null); // { client }
+
+    const [newProductModal, setNewProductModal] = useState(false);
+    const [editProductModal, setEditProductModal] = useState(null); // { product }
 
     
     // New Order State
@@ -80,6 +84,10 @@ const AdminDashboard = () => {
     const [quoteToEdit, setQuoteToEdit] = useState(null);
     const [selectedQuoteIds, setSelectedQuoteIds] = useState(new Set());
     const [batchCategory, setBatchCategory] = useState('');
+    
+    // Product Filters
+    const [productQuery, setProductQuery] = useState('');
+    const [productCategoryFilter, setProductCategoryFilter] = useState('all');
     
     // -- FUNCTIONS --
 
@@ -239,6 +247,29 @@ const AdminDashboard = () => {
         return ['all', ...Array.from(cats)];
     }, [quotes]);
     
+    const uniqueProductCategories = useMemo(() => {
+        const cats = new Set(products.map(p => p.category).filter(Boolean));
+        return ['all', ...Array.from(cats)];
+    }, [products]);
+
+    const filteredProducts = useMemo(() => {
+        let result = products;
+        
+        if (productCategoryFilter !== 'all') {
+            result = result.filter(p => p.category === productCategoryFilter);
+        }
+
+        if (productQuery) {
+            const q = productQuery.toLowerCase();
+            result = result.filter(p => 
+                p.name.toLowerCase().includes(q) ||
+                (p.category && p.category.toLowerCase().includes(q))
+            );
+        }
+
+        return result;
+    }, [products, productQuery, productCategoryFilter]);
+
     const handleEditQuote = (quote) => {
         setQuoteToEdit(quote);
         setActiveTab('calculator');
@@ -540,8 +571,8 @@ const AdminDashboard = () => {
         if(!file) return;
 
         const options = {
-            maxSizeMB: 1, 
-            maxWidthOrHeight: 1920,
+            maxSizeMB: 0.15, // Reduced from 1MB to avoid Firestore doc limit
+            maxWidthOrHeight: 1024,
             useWebWorker: true,
             fileType: 'image/webp'
         };
@@ -549,13 +580,16 @@ const AdminDashboard = () => {
         try {
             const compressedFile = await imageCompression(file, options);
             
-            // Upload to Firebase Storage
-            const fileRef = ref(storage, `orders/${uploadImageModal.orderId}/${Date.now()}_${file.name}`);
-            await uploadBytes(fileRef, compressedFile);
-            const downloadURL = await getDownloadURL(fileRef);
+            // Convert to Base64 instead of Firebase Storage to avoid CORS
+            const base64String = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(compressedFile);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+            });
 
             // Update Order in Firestore
-            await updateOrder(uploadImageModal.orderId, { progressImage: downloadURL });
+            await updateOrder(uploadImageModal.orderId, { progressImage: base64String });
             
             setUploadImageModal(null);
             alert('Imagen subida con éxito');
@@ -564,6 +598,206 @@ const AdminDashboard = () => {
             console.error('Error uploading image:', error);
             alert('Error al subir la imagen.');
         }
+    };
+
+    const handleDeleteEvidence = async (orderId, imageIndex) => {
+        const confirmDelete = window.confirm("¿Estás seguro de que deseas eliminar esta imagen de evidencia?");
+        if (!confirmDelete) return;
+        
+        const order = orders.find(o => o.id === orderId);
+        if (!order || !order.evidenceImages) return;
+
+        const newEvidenceArray = [...order.evidenceImages];
+        newEvidenceArray.splice(imageIndex, 1);
+
+        try {
+            await updateOrder(orderId, { evidenceImages: newEvidenceArray });
+            
+            // Also logically update the local modal state to reflect the deletion immediately
+            if (detailsModal?.data?.id === orderId) {
+                setDetailsModal(prev => ({
+                    ...prev,
+                    data: { ...prev.data, evidenceImages: newEvidenceArray }
+                }));
+            }
+        } catch (error) {
+            console.error("Error deleting evidence image:", error);
+            alert("Error al eliminar la imagen.");
+        }
+    };
+
+    // --- PRODUCT HANDLERS ---
+    const handleCreateProduct = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        let photoUrl = data.photoUrl || '';
+        
+        // Handle file upload if provided
+        const photoFile = formData.get('photoFile');
+        if (photoFile && photoFile.size > 0) {
+            try {
+                const options = { maxSizeMB: 0.15, maxWidthOrHeight: 1024, useWebWorker: true, fileType: 'image/webp' };
+                const compressedFile = await imageCompression(photoFile, options);
+                photoUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(compressedFile);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+            } catch (err) {
+                console.error("Error compressing product image:", err);
+                alert("Hubo un error al procesar la imagen del producto.");
+                setIsSubmitting(false);
+                return;
+            }
+        }
+
+        try {
+            await addProduct({
+                name: data.name,
+                category: data.category,
+                price: parseFloat(data.price),
+                photo: photoUrl
+            });
+            setNewProductModal(false);
+        } catch (error) {
+            console.error("Error creating product:", error);
+            alert("Error al crear producto.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleUpdateProduct = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        let photoUrl = data.photoUrl || editProductModal.photo || '';
+        
+        // Handle file upload if provided
+        const photoFile = formData.get('photoFile');
+        if (photoFile && photoFile.size > 0) {
+            try {
+                const options = { maxSizeMB: 0.15, maxWidthOrHeight: 1024, useWebWorker: true, fileType: 'image/webp' };
+                const compressedFile = await imageCompression(photoFile, options);
+                photoUrl = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(compressedFile);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = error => reject(error);
+                });
+            } catch (err) {
+                console.error("Error compressing product image:", err);
+                alert("Hubo un error al procesar la imagen del producto.");
+                setIsSubmitting(false);
+                return;
+            }
+        }
+
+        try {
+            await updateProduct(editProductModal.id, {
+                name: data.name,
+                category: data.category,
+                price: parseFloat(data.price),
+                photo: photoUrl
+            });
+            setEditProductModal(null);
+        } catch (error) {
+            console.error("Error updating product:", error);
+            alert("Error al actualizar producto.");
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteProduct = async (id) => {
+        if (window.confirm('¿Eliminar producto de forma permanente?')) {
+            await deleteProduct(id);
+        }
+    };
+
+    const handleImportCSV = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setIsSubmitting(true);
+        const reader = new FileReader();
+
+        reader.onload = async (event) => {
+            try {
+                const text = event.target.result;
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                if (lines.length < 2) {
+                    alert('El archivo CSV parece estar vacío o no tiene el formato correcto (requiere encabezados).');
+                    return;
+                }
+
+                // Parse line helper
+                const parseCSVLine = (line) => {
+                    const result = [];
+                    let curVal = '';
+                    let inQuotes = false;
+                    for (let i = 0; i < line.length; i++) {
+                        if (line[i] === '"') {
+                            inQuotes = !inQuotes;
+                        } else if (line[i] === ',' && !inQuotes) {
+                            result.push(curVal.trim());
+                            curVal = '';
+                        } else {
+                            curVal += line[i];
+                        }
+                    }
+                    result.push(curVal.trim());
+                    return result.map(v => v.replace(/^"|"$/g, '').trim()); // remove wrapping quotes
+                };
+
+                const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+                let importedCount = 0;
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const row = parseCSVLine(lines[i]);
+                    if (row.length < 2) continue; // Skip malformed lines
+                    
+                    const productData = {};
+                    headers.forEach((header, index) => {
+                        productData[header] = row[index] || '';
+                    });
+
+                    // Build final product object
+                    // Looking for 'name', 'photo' or 'image', 'category', 'price'
+                    const prodName = productData.name || productData.nombre;
+                    if (prodName) {
+                        const rawPriceStr = productData.price || productData.precio || '0';
+                        const rawPrice = rawPriceStr.replace(/[^0-9.]/g, ''); // Extract numbers
+                        const photoUrl = productData.photo || productData.image || productData.foto || productData.imagen || '';
+                        const category = productData.category || productData.categoria || productData.categoría || 'Otros';
+
+                        await addProduct({
+                            name: prodName,
+                            category: category,
+                            price: parseFloat(rawPrice) || 0,
+                            photo: photoUrl
+                        });
+                        importedCount++;
+                    }
+                }
+                
+                alert(`Importación completada. Se importaron ${importedCount} productos exitosamente.`);
+            } catch (error) {
+                console.error("Error al importar CSV:", error);
+                alert("Hubo un error al procesar el archivo CSV.");
+            } finally {
+                setIsSubmitting(false);
+                e.target.value = ''; // Reset input so the same file can be uploaded again if needed
+            }
+        };
+
+        reader.readAsText(file);
     };
 
 
@@ -676,8 +910,8 @@ const AdminDashboard = () => {
         if (imageFiles.length > 0) {
             try {
                  const options = {
-                    maxSizeMB: 1, 
-                    maxWidthOrHeight: 1920,
+                    maxSizeMB: 0.15, // Reduced from 1MB to avoid Firestore doc limits
+                    maxWidthOrHeight: 1024,
                     useWebWorker: true,
                     fileType: 'image/webp'
                 };
@@ -686,11 +920,15 @@ const AdminDashboard = () => {
                     if (imageFile.size === 0) continue;
                     const compressedFile = await imageCompression(imageFile, options);
                     
-                    // Upload each file
-                    const fileRef = ref(storage, `orders/${targetOrderId}/evidence_${Date.now()}_${imageFile.name}`);
-                    await uploadBytes(fileRef, compressedFile);
-                    const downloadURL = await getDownloadURL(fileRef);
-                    uploadedImages.push(downloadURL);
+                    // Convert to Base64 to save directly in DB without Firebase CORS issues
+                    const base64String = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.readAsDataURL(compressedFile);
+                        reader.onload = () => resolve(reader.result);
+                        reader.onerror = error => reject(error);
+                    });
+                    
+                    uploadedImages.push(base64String);
                 }
 
                 if (uploadedImages.length > 0) {
@@ -841,6 +1079,17 @@ Saludos, Tuna's Craft 🌵`;
     });
     const paginatedLeads = filteredLeads.slice(leadsPage * LEADS_PER_PAGE, (leadsPage + 1) * LEADS_PER_PAGE);
 
+    // Google Drive URL parser for thumbnails
+    const getGoogleDriveImage = (url) => {
+        if (!url) return '';
+        const driveRegex = /(?:\/d\/|id=)([a-zA-Z0-9_-]+)/;
+        const match = url.match(driveRegex);
+        if (match && match[1]) {
+            return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+        }
+        return url;
+    };
+
     return (
         <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-slate-900 text-slate-100 font-sans md:overflow-hidden relative">
              
@@ -872,6 +1121,7 @@ Saludos, Tuna's Craft 🌵`;
                     <NavBtn id="orders" icon={<CheckCircle />} label="Pedidos" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="leads" icon={<FileText />} label="Cotizaciones" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="clients" icon={<Users />} label="Clientes" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
+                    <NavBtn id="products" icon={<ShoppingBag />} label="Catálogo" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="expenses" icon={<CreditCard />} label="Gastos" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="saved_quotes" icon={<Archive />} label="Historial 3D" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="calculator" icon={<Calculator />} label="Cotizador 3D" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
@@ -1425,6 +1675,107 @@ Saludos, Tuna's Craft 🌵`;
                             </table>
                         </div>
                     </div>
+                 )}
+
+                 {/* Products / Catalog Tab */}
+                 {activeTab === 'products' && (
+                     <div>
+                        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                            <h2 className="text-3xl font-display font-bold">Catálogo de Productos</h2>
+                            <div className="flex flex-col md:flex-row gap-2 w-full md:w-auto">
+                                <div className="relative w-full md:w-64">
+                                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
+                                   <input 
+                                       type="text" 
+                                       placeholder="Buscar producto..." 
+                                       value={productQuery}
+                                       onChange={(e) => setProductQuery(e.target.value)}
+                                       className="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-brand-blue"
+                                   />
+                                </div>
+                                <select 
+                                    className="bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm w-full md:w-auto focus:outline-none focus:border-brand-blue"
+                                    value={productCategoryFilter}
+                                    onChange={(e) => setProductCategoryFilter(e.target.value)}
+                                >
+                                    {uniqueProductCategories.map(c => (
+                                        <option key={c} value={c}>{c === 'all' ? 'Todas las Categorías' : c}</option>
+                                    ))}
+                                </select>
+                                
+                                <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
+                                    <label className="bg-slate-700 hover:bg-slate-600 cursor-pointer px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors flex-1 md:flex-auto">
+                                        <Upload size={18} />
+                                        <span>Importar CSV</span>
+                                        <input 
+                                            type="file" 
+                                            accept=".csv" 
+                                            onChange={handleImportCSV} 
+                                            className="hidden" 
+                                            disabled={isSubmitting}
+                                        />
+                                    </label>
+                                    <button onClick={() => setNewProductModal(true)} className="bg-brand-blue hover:bg-blue-600 px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 flex-1 md:flex-auto">
+                                        <Plus size={18} /> Nuevo Producto
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Products Table */}
+                        <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700 overflow-x-auto">
+                            <table className="w-full text-left min-w-[700px]">
+                                <thead className="bg-slate-700/50 text-slate-300">
+                                    <tr>
+                                        <th className="p-4 w-20">Foto</th>
+                                        <th className="p-4">Nombre</th>
+                                        <th className="p-4">Categoría</th>
+                                        <th className="p-4">Precio</th>
+                                        <th className="p-4 text-center">Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-700">
+                                    {filteredProducts.map(product => (
+                                        <tr key={product.id} className="hover:bg-slate-700/30">
+                                            <td className="p-4">
+                                                {product.photo ? (
+                                                    <img src={getGoogleDriveImage(product.photo)} className="w-12 h-12 object-cover rounded-lg border border-slate-600" alt={product.name} />
+                                                ) : (
+                                                    <div className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center text-slate-500"><ShoppingBag size={20} /></div>
+                                                )}
+                                            </td>
+                                            <td className="p-4 font-bold">{product.name}</td>
+                                            <td className="p-4 text-slate-400 text-sm">{product.category || '-'}</td>
+                                            <td className="p-4 text-brand-orange font-bold">${parseFloat(product.price).toFixed(2)}</td>
+                                            <td className="p-4">
+                                                <div className="flex justify-center items-center gap-2">
+                                                    <button 
+                                                        onClick={() => setEditProductModal(product)}
+                                                        className="p-2 text-blue-400 hover:bg-blue-400/20 rounded-full transition-colors"
+                                                        title="Editar"
+                                                    >
+                                                        <Edit size={18} />
+                                                    </button>
+                                                    <button 
+                                                        onClick={() => handleDeleteProduct(product.id)}
+                                                        className="p-2 text-red-400 hover:bg-red-400/20 rounded-full transition-colors"
+                                                        title="Eliminar"
+                                                    >
+                                                        <Trash2 size={18} />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {filteredProducts.length === 0 && (
+                                        <tr>
+                                            <td colSpan="5" className="p-8 text-center text-slate-500">No hay productos en el catálogo que coincidan con los filtros.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                     </div>
                  )}
                  {/* Calculator Tab */}
                  {activeTab === 'calculator' && (
@@ -2030,9 +2381,18 @@ Saludos, Tuna's Craft 🌵`;
                                          <h4 className="text-xs uppercase text-gray-500 font-bold mb-2">Imágenes de Evidencia</h4>
                                          <div className="grid grid-cols-2 gap-2">
                                              {detailsModal.data.evidenceImages.map((src, idx) => (
-                                                <a key={idx} href={src} target="_blank" rel="noopener noreferrer" className="block">
-                                                    <img src={src} className="w-full h-32 object-cover rounded-xl border border-slate-600 hover:opacity-80 transition-opacity" />
-                                                </a>
+                                                <div key={idx} className="relative group">
+                                                    <a href={src} target="_blank" rel="noopener noreferrer" className="block">
+                                                        <img src={src} className="w-full h-32 object-cover rounded-xl border border-slate-600 hover:opacity-80 transition-opacity" />
+                                                    </a>
+                                                    <button 
+                                                        onClick={() => handleDeleteEvidence(detailsModal.data.id, idx)}
+                                                        className="absolute top-2 right-2 p-1.5 bg-red-500/80 hover:bg-red-600 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        title="Eliminar imagen"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                </div>
                                              ))}
                                          </div>
                                      </div>
@@ -2232,7 +2592,93 @@ Saludos, Tuna's Craft 🌵`;
 
 
 
+            {/* New Product Modal */}
+            {newProductModal && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+                    <form onSubmit={handleCreateProduct} className="bg-slate-800 p-6 rounded-2xl w-full max-w-md border border-slate-700">
+                        <h3 className="text-xl font-bold mb-4">Nuevo Producto</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Nombre del Producto</label>
+                                <input name="name" className="w-full bg-slate-900 border border-slate-600 rounded p-2" required placeholder="Ej: Joyero Cajonera 175mm" />
+                            </div>
+                            <div>
+                                <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Categoría</label>
+                                <input name="category" list="product-categories" className="w-full bg-slate-900 border border-slate-600 rounded p-2" placeholder="Ej: Goth, Decoración..." required />
+                                <datalist id="product-categories">
+                                    {uniqueProductCategories.filter(c => c !== 'all').map(c => <option key={c} value={c} />)}
+                                </datalist>
+                            </div>
+                            <div>
+                                <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Precio Unitario ($)</label>
+                                <input name="price" type="number" step="0.01" min="0" className="w-full bg-slate-900 border border-slate-600 rounded p-2" required placeholder="0.00" />
+                            </div>
+                            <div>
+                                <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Foto Destacada</label>
+                                <input 
+                                    name="photoFile" 
+                                    type="file" 
+                                    accept="image/*"
+                                    className="w-full text-sm text-slate-500 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-blue file:text-white hover:file:bg-blue-600 cursor-pointer mb-2" 
+                                />
+                                <input name="photoUrl" type="url" placeholder="O pega una URL directa de la imagen" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-xs" />
+                            </div>
+                        </div>
 
+                        <div className="flex justify-end gap-3 mt-6 border-t border-slate-700 pt-4">
+                            <button type="button" onClick={() => setNewProductModal(false)} className="text-slate-400 hover:text-white" disabled={isSubmitting}>Cancelar</button>
+                            <button type="submit" disabled={isSubmitting} className="bg-brand-blue px-4 py-2 rounded font-bold hover:bg-blue-600 transition-colors flex items-center gap-2">
+                                {isSubmitting && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                                Guardar Producto
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
+
+            {/* Edit Product Modal */}
+            {editProductModal && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
+                    <form onSubmit={handleUpdateProduct} className="bg-slate-800 p-6 rounded-2xl w-full max-w-md border border-slate-700">
+                        <h3 className="text-xl font-bold mb-4">Editar Producto</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Nombre del Producto</label>
+                                <input name="name" defaultValue={editProductModal.name} className="w-full bg-slate-900 border border-slate-600 rounded p-2" required />
+                            </div>
+                            <div>
+                                <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Categoría</label>
+                                <input name="category" defaultValue={editProductModal.category} list="product-categories" className="w-full bg-slate-900 border border-slate-600 rounded p-2" required />
+                            </div>
+                            <div>
+                                <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Precio Unitario ($)</label>
+                                <input name="price" defaultValue={editProductModal.price} type="number" step="0.01" min="0" className="w-full bg-slate-900 border border-slate-600 rounded p-2" required />
+                            </div>
+                            <div>
+                                <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Foto Destacada</label>
+                                {editProductModal.photo && (
+                                    <img src={getGoogleDriveImage(editProductModal.photo)} alt="Current" className="w-full h-32 object-cover rounded-lg border border-slate-600 mb-2 opacity-80" />
+                                )}
+                                <input 
+                                    name="photoFile" 
+                                    type="file" 
+                                    accept="image/*"
+                                    className="w-full text-sm text-slate-500 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-brand-blue file:text-white hover:file:bg-blue-600 cursor-pointer mb-2" 
+                                />
+                                <input name="photoUrl" type="url" defaultValue={editProductModal.photo?.startsWith('http') && !editProductModal.photo.startsWith('data:') ? editProductModal.photo : ''} placeholder="O pega una URL directa de la imagen" className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-xs" />
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end gap-3 mt-6 border-t border-slate-700 pt-4">
+                            <button type="button" onClick={() => setEditProductModal(null)} className="text-slate-400 hover:text-white" disabled={isSubmitting}>Cancelar</button>
+                            <button type="submit" disabled={isSubmitting} className="bg-brand-blue px-4 py-2 rounded font-bold hover:bg-blue-600 transition-colors flex items-center gap-2">
+                                {isSubmitting && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
+                                Actualizar Producto
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            )}
         </div>
     );
 };
