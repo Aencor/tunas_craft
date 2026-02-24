@@ -758,6 +758,7 @@ const AdminDashboard = () => {
 
                 const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
                 let importedCount = 0;
+                let skippedCount = 0;
                 
                 for (let i = 1; i < lines.length; i++) {
                     const row = parseCSVLine(lines[i]);
@@ -772,22 +773,28 @@ const AdminDashboard = () => {
                     // Looking for 'name', 'photo' or 'image', 'category', 'price'
                     const prodName = productData.name || productData.nombre;
                     if (prodName) {
-                        const rawPriceStr = productData.price || productData.precio || '0';
-                        const rawPrice = rawPriceStr.replace(/[^0-9.]/g, ''); // Extract numbers
-                        const photoUrl = productData.photo || productData.image || productData.foto || productData.imagen || '';
-                        const category = productData.category || productData.categoria || productData.categoría || 'Otros';
+                        const existingProduct = products.find(p => p.name.toLowerCase() === prodName.toLowerCase());
+                        
+                        if (!existingProduct) {
+                            const rawPriceStr = productData.price || productData.precio || '0';
+                            const rawPrice = rawPriceStr.replace(/[^0-9.]/g, ''); // Extract numbers
+                            const photoUrl = productData.photo || productData.image || productData.foto || productData.imagen || '';
+                            const category = productData.category || productData.categoria || productData.categoría || 'Otros';
 
-                        await addProduct({
-                            name: prodName,
-                            category: category,
-                            price: parseFloat(rawPrice) || 0,
-                            photo: photoUrl
-                        });
-                        importedCount++;
+                            await addProduct({
+                                name: prodName,
+                                category: category,
+                                price: parseFloat(rawPrice) || 0,
+                                photo: photoUrl
+                            });
+                            importedCount++;
+                        } else {
+                            skippedCount++;
+                        }
                     }
                 }
                 
-                alert(`Importación completada. Se importaron ${importedCount} productos exitosamente.`);
+                alert(`Importación completada. Se añadieron ${importedCount} productos nuevos y se omitieron ${skippedCount} duplicados.`);
             } catch (error) {
                 console.error("Error al importar CSV:", error);
                 alert("Hubo un error al procesar el archivo CSV.");
