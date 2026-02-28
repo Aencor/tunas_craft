@@ -23,6 +23,17 @@ const Landing = () => {
     // Limit to 12 for Home
     const displayedProducts = filteredProducts.slice(0, 12);
 
+    // Google Drive URL parser for thumbnails and logo fallback
+    const getGoogleDriveImage = (url) => {
+        if (!url || typeof url !== 'string' || url.trim() === '') return '/logo.png';
+        const driveRegex = /(?:\/d\/|id=)([a-zA-Z0-9_-]+)/;
+        const match = url.match(driveRegex);
+        if (match && match[1]) {
+            return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w800`;
+        }
+        return url;
+    };
+
     const [isScrolled, setIsScrolled] = useState(false);
     useEffect(() => {
         const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -48,6 +59,7 @@ const Landing = () => {
               <a href="#services" className="text-slate-300 hover:text-white transition-colors">Servicios</a>
               <a href="#delivery" className="text-slate-300 hover:text-white transition-colors">Entregas</a>
               <Link to="/status" className="text-slate-300 hover:text-white transition-colors">Status del Pedido</Link>
+              <Link to="/catalogo" className="text-slate-300 hover:text-white font-bold transition-colors">Catálogo</Link>
               <Link to="/quote" className="bg-brand-orange hover:bg-orange-600 text-white px-6 py-2 rounded-full font-bold transition-all transform hover:scale-105 shadow-lg hover:shadow-orange-500/25">
                 Cotizar Ahora
               </Link>
@@ -68,6 +80,7 @@ const Landing = () => {
                     <a href="#services" onClick={toggleMenu} className="text-slate-300 hover:text-white text-lg">Servicios</a>
                     <a href="#delivery" onClick={toggleMenu} className="text-slate-300 hover:text-white text-lg">Entregas</a>
                     <Link to="/status" onClick={toggleMenu} className="text-slate-300 hover:text-white text-lg">Status del Pedido</Link>
+                    <Link to="/catalogo" onClick={toggleMenu} className="text-brand-orange font-bold text-lg">Catálogo</Link>
                     <Link to="/quote" onClick={toggleMenu} className="bg-brand-orange text-white px-8 py-3 rounded-full font-bold text-lg mt-4">
                         Cotizar Ahora
                     </Link>
@@ -93,10 +106,15 @@ const Landing = () => {
                     Creamos figuras, adornos y piezas personalizadas con la mejor calidad. 
                     ¡Si lo imaginas, lo podemos imprimir!
                 </p>
-                <div className="flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-                    <Link to="/quote" className="bg-brand-blue hover:bg-blue-600 text-white text-lg px-8 py-4 rounded-xl font-bold shadow-xl shadow-blue-500/20 transition-all hover:-translate-y-1">
-                        Hacer un Pedido
-                    </Link>
+                <div className="w-full max-w-lg mx-auto md:mx-0 rounded-2xl overflow-hidden shadow-2xl shadow-brand-blue/20 border border-white/10 mt-4">
+                    <video 
+                        src="/video/video_web.mp4" 
+                        autoPlay 
+                        loop 
+                        muted 
+                        playsInline 
+                        className="w-full h-auto object-cover pointer-events-none"
+                    />
                 </div>
             </div>
             <div className="flex-1 w-full h-[400px] md:h-[600px] relative z-10">
@@ -286,12 +304,12 @@ const Landing = () => {
             {displayedProducts.map((product, idx) => (
                 <div 
                     key={idx}
-                    onClick={() => setLightboxSrc(product.image)}
+                    onClick={() => setLightboxSrc(getGoogleDriveImage(product.image))}
                     className="group relative overflow-hidden rounded-2xl shadow-lg aspect-square bg-gray-900 cursor-pointer hover:shadow-2xl transition-all hover:scale-[1.02]"
                 >
                     <div 
                         className="w-full h-full bg-cover bg-center group-hover:scale-110 transition-transform duration-500"
-                        style={{ backgroundImage: `url('${product.image}')` }}
+                        style={{ backgroundImage: `url('${getGoogleDriveImage(product.image)}')` }}
                     />
                     
                     {/* Availability Badge */}
@@ -309,6 +327,13 @@ const Landing = () => {
                     </div>
                 </div>
             ))}
+        </div>
+
+        {/* Catalog Button */}
+        <div className="mt-12 text-center">
+            <Link to="/catalogo" className="inline-flex items-center gap-2 bg-brand-orange hover:bg-orange-600 text-white px-8 py-4 rounded-full font-bold transition-all transform hover:-translate-y-1 shadow-lg hover:shadow-orange-500/25">
+                Ver Catálogo Completo &rarr;
+            </Link>
         </div>
       </section>
 

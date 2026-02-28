@@ -17,6 +17,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@mercadopago/sdk-react": "^1.0.7",
+    "@paypal/react-paypal-js": "^8.9.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "body-parser": "^2.2.2",

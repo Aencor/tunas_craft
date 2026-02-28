@@ -45,7 +45,7 @@ const Quote = () => {
                  message += `\nID: ${newItem.id}`;
             }
 
-            const phone = '525619956812';
+            const phone = '525534476672';
             window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, '_blank');
             
             setShowSuccess(true);

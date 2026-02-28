@@ -15,6 +15,7 @@ export const DataProvider = ({ children }) => {
     const [expenses, setExpenses] = useState([]);
     const [quotes, setQuotes] = useState([]);
     const [products, setProducts] = useState([]); // New state for products
+    const [coupons, setCoupons] = useState([]); // New state for coupons
     const [user, setUser] = useState(null);
     const [loadingAuth, setLoadingAuth] = useState(true);
 
@@ -25,10 +26,22 @@ export const DataProvider = ({ children }) => {
     const expensesCollection = collection(db, 'expenses');
     const quotesCollection = collection(db, 'saved_quotes');
     const productsCollection = collection(db, 'products'); // New collection
+    const couponsCollection = collection(db, 'coupons'); // New collection
 
     // Auth & Listeners
     useEffect(() => {
         const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
+            if (currentUser) {
+                const allowedEmails = ['kikemura07@gmail.com', 'dreaminginwinter@gmail.com'];
+                if (!allowedEmails.includes(currentUser.email)) {
+                    signOut(auth);
+                    alert("Acceso denegado: El correo no está autorizado para acceder al panel de administración.");
+                    setUser(null);
+                    setLoadingAuth(false);
+                    return;
+                }
+            }
+
             setUser(currentUser);
             setLoadingAuth(false);
             
@@ -52,6 +65,9 @@ export const DataProvider = ({ children }) => {
                 const unsubProducts = onSnapshot(productsCollection, (snapshot) => {
                     setProducts(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
                 });
+                const unsubCoupons = onSnapshot(couponsCollection, (snapshot) => {
+                    setCoupons(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+                });
 
                 return () => {
                     unsubClients();
@@ -60,6 +76,7 @@ export const DataProvider = ({ children }) => {
                     unsubExpenses();
                     unsubQuotes();
                     unsubProducts();
+                    unsubCoupons();
                 };
             } else {
                 // Clear state on logout
@@ -69,6 +86,7 @@ export const DataProvider = ({ children }) => {
                 setExpenses([]);
                 setQuotes([]);
                 setProducts([]);
+                setCoupons([]);
             }
         });
 
@@ -290,6 +308,44 @@ export const DataProvider = ({ children }) => {
         }
     };
 
+    // COUPONS
+    const addCoupon = async (coupon) => {
+        try {
+            const newCoupon = {
+                ...coupon,
+                createdAt: new Date().toISOString()
+            };
+            const docRef = await addDoc(couponsCollection, newCoupon);
+            return { ...newCoupon, id: docRef.id };
+        } catch (error) {
+            console.error("Error adding coupon:", error);
+            alert(`Error guardando cupón: ${error.code} - ${error.message}`);
+            throw error;
+        }
+    };
+
+    const updateCoupon = async (id, updates) => {
+        try {
+            const docRef = doc(db, 'coupons', id);
+            await updateDoc(docRef, updates);
+        } catch (error) {
+            console.error("Error updating coupon:", error);
+            alert(`Error al actualizar cupón: ${error.code} - ${error.message}`);
+            throw error;
+        }
+    };
+
+    const deleteCoupon = async (id) => {
+        try {
+            const docRef = doc(db, 'coupons', id);
+            await deleteDoc(docRef);
+        } catch (error) {
+            console.error("Error deleting coupon:", error);
+            alert(`Error al eliminar cupón: ${error.code} - ${error.message}`);
+            throw error;
+        }
+    };
+
     // BULK IMPORT (Optional implementation for Firebase)
     const importDatabase = async (data) => {
         // Note: This would be expensive in valid reads/writes, implementing naive version
@@ -308,6 +364,7 @@ export const DataProvider = ({ children }) => {
             expenses, addExpense, deleteExpense,
             quotes, addQuote, deleteQuote, updateQuote,
             products, addProduct, updateProduct, deleteProduct,
+            coupons, addCoupon, updateCoupon, deleteCoupon,
             importDatabase
         }}>
             {children}

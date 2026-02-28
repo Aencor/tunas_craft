@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import SalesChart from '../components/SalesChart';
-import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown, CreditCard, ArrowUp, ArrowDown, Calculator, Archive } from 'lucide-react';
+import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown, CreditCard, ArrowUp, ArrowDown, Calculator, Archive, Store, Percent } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import { storage } from '../firebase';
@@ -17,7 +17,8 @@ const AdminDashboard = () => {
         addLead, updateLead, deleteLead,
         expenses, addExpense, deleteExpense,
         quotes, deleteQuote, updateQuote,
-        products, addProduct, updateProduct, deleteProduct
+        products, addProduct, updateProduct, deleteProduct,
+        coupons, addCoupon, deleteCoupon
     } = useData();
 
     // Helper for status colors
@@ -51,6 +52,9 @@ const AdminDashboard = () => {
 
     const [newProductModal, setNewProductModal] = useState(false);
     const [editProductModal, setEditProductModal] = useState(null); // { product }
+
+    // Coupons
+    const [newCouponModal, setNewCouponModal] = useState(false);
 
     
     // New Order State
@@ -88,6 +92,7 @@ const AdminDashboard = () => {
     // Product Filters
     const [productQuery, setProductQuery] = useState('');
     const [productCategoryFilter, setProductCategoryFilter] = useState('all');
+    const [soldProductsSearch, setSoldProductsSearch] = useState('');
     
     // -- FUNCTIONS --
 
@@ -721,6 +726,34 @@ const AdminDashboard = () => {
         }
     };
 
+    // --- COUPON HANDLERS ---
+    const handleCreateCoupon = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        const formData = new FormData(e.target);
+        
+        try {
+            await addCoupon({
+                code: formData.get('code').toUpperCase(),
+                type: formData.get('type'),
+                value: parseFloat(formData.get('value')),
+                label: formData.get('label')
+            });
+            setNewCouponModal(false);
+        } catch (error) {
+            console.error("Error creating coupon:", error);
+            // Alert is handled in context
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleDeleteCoupon = async (id) => {
+        if (window.confirm('¿Eliminar cupón? Esta acción no se puede deshacer.')) {
+            await deleteCoupon(id);
+        }
+    };
+
     const handleImportCSV = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -1088,7 +1121,7 @@ Saludos, Tuna's Craft 🌵`;
 
     // Google Drive URL parser for thumbnails
     const getGoogleDriveImage = (url) => {
-        if (!url) return '';
+        if (!url || typeof url !== 'string' || url.trim() === '') return '/logo.png';
         const driveRegex = /(?:\/d\/|id=)([a-zA-Z0-9_-]+)/;
         const match = url.match(driveRegex);
         if (match && match[1]) {
@@ -1128,6 +1161,7 @@ Saludos, Tuna's Craft 🌵`;
                     <NavBtn id="orders" icon={<CheckCircle />} label="Pedidos" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="leads" icon={<FileText />} label="Cotizaciones" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="clients" icon={<Users />} label="Clientes" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
+                    <NavBtn id="store" icon={<Store />} label="Tienda" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="products" icon={<ShoppingBag />} label="Catálogo" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="expenses" icon={<CreditCard />} label="Gastos" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="saved_quotes" icon={<Archive />} label="Historial 3D" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
@@ -1784,6 +1818,147 @@ Saludos, Tuna's Craft 🌵`;
                         </div>
                      </div>
                  )}
+
+                 {/* Store Management Tab */}
+                 {activeTab === 'store' && (
+                     <div className="space-y-6">
+                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                             <h2 className="text-3xl font-display font-bold">Administración de la Tienda</h2>
+                         </div>
+
+                         {/* Quick Store Stats */}
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                             {(() => {
+                                 // Simple logic to count total online orders based on some convention
+                                 // Right now, online orders might just be all orders that have 'Checkout Online' as delivery... 
+                                 // Let's filter by default "Pendiente - Tienda Online" or just count ALL orders? 
+                                 // It's probably better to just show total coupons usage if we had it.
+                                 // Let's just show Active Coupons, and maybe an online sales placeholder
+                                 const onlineOrders = orders.filter(o => o.deliveryLocation?.includes('Tienda Online') || o.client?.includes('Online'));
+                                 const onlineRevenue = onlineOrders.reduce((acc, curr) => acc + parseFloat(curr.total || 0), 0);
+                                 
+                                 return (
+                                    <>
+                                        <StatCard title="Ventas Tienda Online" value={`$${onlineRevenue.toFixed(2)}`} icon={<Store className="text-brand-orange" />} />
+                                        <StatCard title="Pedidos Online" value={onlineOrders.length} color="text-blue-400" />
+                                        <StatCard title="Cupones Activos" value={coupons.length} icon={<Percent className="text-green-400" />} />
+                                    </>
+                                 );
+                             })()}
+                         </div>
+
+                         {/* Most Sold Products */}
+                         <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                             <div className="p-6 border-b border-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                                 <h3 className="text-xl font-bold flex items-center gap-2"><ShoppingBag size={20} className="text-brand-orange"/> Productos Vendidos</h3>
+                                 <div className="relative w-full sm:w-64">
+                                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500" size={16} />
+                                     <input 
+                                         type="text" 
+                                         placeholder="Buscar producto vendido..." 
+                                         value={soldProductsSearch}
+                                         onChange={(e) => setSoldProductsSearch(e.target.value)}
+                                         className="w-full bg-slate-900 border border-slate-600 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-brand-blue"
+                                     />
+                                 </div>
+                             </div>
+                             <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                                 <table className="w-full text-left">
+                                     <thead className="bg-slate-700/50 text-slate-300 text-sm uppercase tracking-wider sticky top-0">
+                                         <tr>
+                                             <th className="p-4">Producto</th>
+                                             <th className="p-4 text-right">Cantidad Vendida</th>
+                                         </tr>
+                                     </thead>
+                                     <tbody className="divide-y divide-slate-700">
+                                         {(() => {
+                                             const soldProducts = orders.reduce((acc, order) => {
+                                                 if (order.status !== 'cancelado' && order.items) {
+                                                     order.items.forEach(item => {
+                                                         const name = item.desc || item.name;
+                                                         if (!name) return;
+                                                         acc[name] = (acc[name] || 0) + (Number(item.qty) || 1);
+                                                     });
+                                                 }
+                                                 return acc;
+                                             }, {});
+                                             
+                                             const sortedSoldProducts = Object.entries(soldProducts)
+                                                 .map(([name, qty]) => ({ name, qty }))
+                                                 .filter(p => p.name.toLowerCase().includes(soldProductsSearch.toLowerCase()))
+                                                 .sort((a, b) => b.qty - a.qty);
+                                             
+                                             return sortedSoldProducts.length > 0 ? sortedSoldProducts.map((p, idx) => (
+                                                 <tr key={idx} className="hover:bg-slate-700/30">
+                                                     <td className="p-4 text-slate-300 font-bold">{p.name}</td>
+                                                     <td className="p-4 text-right text-brand-orange font-bold text-lg">{p.qty}</td>
+                                                 </tr>
+                                             )) : (
+                                                 <tr>
+                                                     <td colSpan="2" className="p-8 text-center text-slate-500 italic">Aún no hay ventas registradas.</td>
+                                                 </tr>
+                                             );
+                                         })()}
+                                     </tbody>
+                                 </table>
+                             </div>
+                         </div>
+
+                         <div className="bg-slate-800 rounded-xl overflow-hidden border border-slate-700">
+                             <div className="p-6 border-b border-slate-700 flex justify-between items-center">
+                                 <h3 className="text-xl font-bold flex items-center gap-2"><Percent size={20} className="text-brand-orange"/> Cupones de Descuento</h3>
+                                 <button onClick={() => setNewCouponModal(true)} className="bg-brand-blue hover:bg-blue-600 px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 text-sm transition-colors">
+                                     <Plus size={16} /> Crear Cupón
+                                 </button>
+                             </div>
+                             <div className="overflow-x-auto">
+                                 <table className="w-full text-left min-w-[600px]">
+                                     <thead className="bg-slate-700/50 text-slate-300 text-sm uppercase tracking-wider">
+                                         <tr>
+                                             <th className="p-4">Código</th>
+                                             <th className="p-4">Descripción</th>
+                                             <th className="p-4 text-center">Tipo</th>
+                                             <th className="p-4 text-right">Valor</th>
+                                             <th className="p-4 text-center">Acciones</th>
+                                         </tr>
+                                     </thead>
+                                     <tbody className="divide-y divide-slate-700">
+                                         {coupons.length > 0 ? coupons.map(coupon => (
+                                             <tr key={coupon.id} className="hover:bg-slate-700/30">
+                                                 <td className="p-4 font-mono font-bold text-brand-orange tracking-widest">{coupon.code}</td>
+                                                 <td className="p-4 text-slate-300">{coupon.label}</td>
+                                                 <td className="p-4 text-center">
+                                                     <span className={`text-xs px-2 py-1 rounded-full border font-bold ${coupon.type === 'percent' ? 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-green-500/20 text-green-400 border-green-500/30'}`}>
+                                                         {coupon.type === 'percent' ? 'Porcentaje %' : 'Monto Fijo $'}
+                                                     </span>
+                                                 </td>
+                                                 <td className="p-4 text-right font-bold text-lg">
+                                                     {coupon.type === 'percent' ? `${coupon.value}%` : `$${coupon.value.toFixed(2)}`}
+                                                 </td>
+                                                 <td className="p-4">
+                                                     <div className="flex justify-center items-center gap-2">
+                                                         <button 
+                                                             onClick={() => handleDeleteCoupon(coupon.id)}
+                                                             className="p-2 text-red-400 hover:bg-red-400/20 rounded-full transition-colors"
+                                                             title="Eliminar"
+                                                         >
+                                                             <Trash2 size={18} />
+                                                         </button>
+                                                     </div>
+                                                 </td>
+                                             </tr>
+                                         )) : (
+                                            <tr>
+                                                <td colSpan="5" className="p-8 text-center text-slate-500 italic">No hay cupones registrados. Crea uno nuevo para empezar a dar descuentos.</td>
+                                            </tr>
+                                         )}
+                                     </tbody>
+                                 </table>
+                             </div>
+                         </div>
+                     </div>
+                 )}
+
                  {/* Calculator Tab */}
                  {activeTab === 'calculator' && (
                      <div>
@@ -2597,7 +2772,71 @@ Saludos, Tuna's Craft 🌵`;
                 </div>
             )}
 
-
+            {/* New Coupon Modal */}
+            {newCouponModal && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50">
+                    <form onSubmit={handleCreateCoupon} className="bg-slate-800 rounded-2xl w-full max-w-md border border-slate-700 shadow-xl overflow-hidden animate-fade-in-up">
+                         <div className="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
+                             <h2 className="text-xl font-bold flex items-center gap-2"><Percent className="text-brand-orange" /> Nuevo Cupón</h2>
+                             <button type="button" onClick={() => setNewCouponModal(false)} className="text-slate-400 hover:text-white transition-colors">
+                                 <X size={24} />
+                             </button>
+                         </div>
+                         <div className="p-6 space-y-4">
+                             <div>
+                                 <label className="block text-sm font-bold text-slate-400 mb-1">Código Promocional</label>
+                                 <input 
+                                     name="code" 
+                                     required 
+                                     placeholder="Ej. VERANO24"
+                                     className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 focus:outline-none focus:border-brand-blue uppercase font-mono tracking-wider"
+                                 />
+                                 <p className="text-xs text-slate-500 mt-1">El código que los clientes ingresarán en el carrito.</p>
+                             </div>
+                             <div>
+                                 <label className="block text-sm font-bold text-slate-400 mb-1">Descripción / Etiqueta</label>
+                                 <input 
+                                     name="label" 
+                                     required 
+                                     placeholder="Ej. 15% de descuento en verano"
+                                     className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 focus:outline-none focus:border-brand-blue"
+                                 />
+                             </div>
+                             <div className="grid grid-cols-2 gap-4">
+                                 <div>
+                                     <label className="block text-sm font-bold text-slate-400 mb-1">Tipo de Descuento</label>
+                                     <select 
+                                         name="type" 
+                                         required
+                                         className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-sm focus:outline-none focus:border-brand-blue"
+                                     >
+                                         <option value="percent">Porcentaje (%)</option>
+                                         <option value="fixed">Monto Fijo ($)</option>
+                                     </select>
+                                 </div>
+                                 <div>
+                                     <label className="block text-sm font-bold text-slate-400 mb-1">Valor</label>
+                                     <input 
+                                         type="number" 
+                                         name="value" 
+                                         required 
+                                         step="0.01"
+                                         min="0"
+                                         placeholder="Ej. 15 o 100"
+                                         className="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 focus:outline-none focus:border-brand-blue font-bold"
+                                     />
+                                 </div>
+                             </div>
+                         </div>
+                         <div className="p-6 border-t border-slate-700 flex justify-end gap-3 bg-slate-800/50">
+                             <button type="button" onClick={() => setNewCouponModal(false)} className="px-6 py-2 rounded-lg text-slate-300 hover:text-white transition-colors font-bold">Cancelar</button>
+                             <button type="submit" disabled={isSubmitting} className="bg-brand-orange hover:bg-orange-500 disabled:bg-slate-600 text-white px-6 py-2 rounded-lg font-bold shadow-lg shadow-orange-500/30 transition-all">
+                                 {isSubmitting ? 'Guardando...' : 'Crear Cupón'}
+                             </button>
+                         </div>
+                    </form>
+                </div>
+            )}
 
             {/* New Product Modal */}
             {newProductModal && (

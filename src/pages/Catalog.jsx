@@ -1,12 +1,21 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, X } from 'lucide-react';
+import { ArrowLeft, X, ShoppingCart, Plus } from 'lucide-react';
 import { useGallery } from '../hooks/useGallery';
+import { useCart } from '../context/CartContext';
 
 const Catalog = () => {
     const { products, loading } = useGallery();
+    const { addToCart, totalItems } = useCart();
     const [activeCategory, setActiveCategory] = useState('all');
     const [lightboxSrc, setLightboxSrc] = useState(null);
+    const [isAnimating, setIsAnimating] = useState(false);
+
+    const handleAddToCart = (product) => {
+        addToCart(product);
+        setIsAnimating(true);
+        setTimeout(() => setIsAnimating(false), 300);
+    };
 
     const categories = ['Todos', ...new Set(products.map(p => p.category).filter(Boolean))];
     
@@ -16,7 +25,7 @@ const Catalog = () => {
 
     // Google Drive URL parser for thumbnails
     const getGoogleDriveImage = (url) => {
-        if (!url) return '';
+        if (!url || typeof url !== 'string' || url.trim() === '') return '/logo.png';
         const driveRegex = /(?:\/d\/|id=)([a-zA-Z0-9_-]+)/;
         const match = url.match(driveRegex);
         if (match && match[1]) {
@@ -81,9 +90,23 @@ const Catalog = () => {
                                 </div>
 
                                 {/* Info Overlay */}
-                                <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black via-black/80 to-transparent pt-12">
-                                    <h3 className="text-white font-bold text-lg leading-tight truncate">{product.name}</h3>
-                                    <p className="text-brand-orange font-bold text-xl">{product.price}</p>
+                                <div className="absolute bottom-0 left-0 w-full p-4 bg-gradient-to-t from-black via-black/80 to-transparent pt-12 flex justify-between items-end">
+                                    <div className="flex-1 min-w-0 pr-2">
+                                        <h3 className="text-white font-bold text-lg leading-tight truncate">{product.name}</h3>
+                                        <p className="text-brand-orange font-bold text-xl">{product.price}</p>
+                                    </div>
+                                    {product.quantity > 0 && (
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleAddToCart(product);
+                                            }}
+                                            className="bg-brand-orange hover:bg-orange-500 text-white p-2 rounded-full shadow-lg transition-transform hover:scale-110 flex-shrink-0 active:scale-95"
+                                            title="Agregar al carrito"
+                                        >
+                                            <Plus size={20} />
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -99,6 +122,23 @@ const Catalog = () => {
                     </button>
                     <img src={lightboxSrc} alt="Vista completa" className="max-h-[85vh] max-w-[95vw] rounded-lg shadow-2xl border border-white/10" onClick={e => e.stopPropagation()} />
                 </div>
+            )}
+
+            {/* Floating Cart Button */}
+            {totalItems > 0 && (
+                <Link 
+                    to="/checkout" 
+                    className={`fixed bottom-6 right-6 z-50 bg-brand-orange hover:bg-orange-500 text-white p-4 rounded-full shadow-2xl shadow-brand-orange/40 transition-all flex items-center justify-center group
+                        ${isAnimating ? 'scale-125 ring-4 ring-white shadow-brand-orange cursor-not-allowed pointer-events-none duration-100' : 'hover:scale-110 duration-300'}
+                    `}
+                >
+                    <div className="relative">
+                        <ShoppingCart size={28} className={isAnimating ? 'animate-bounce' : ''} />
+                        <span className="absolute -top-2 -right-2 bg-white text-brand-orange font-bold w-6 h-6 flex items-center justify-center rounded-full text-xs shadow-md">
+                            {totalItems}
+                        </span>
+                    </div>
+                </Link>
             )}
         </div>
     );

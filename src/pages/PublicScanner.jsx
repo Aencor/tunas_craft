@@ -249,7 +249,7 @@ const PublicScanner = () => {
                                 <button 
                                     disabled={!file || isThinking}
                                     onClick={() => {
-                                        const phone = '525619956812';
+                                        const phone = '525534476672';
                                         const msg = `Hola Tuna's Craft 🌵, coticé una pieza en su web:\n\n- Material: ${material}\n- Peso Est: ${estimatedWeight.toFixed(1)}g\n- Precio Est: ${formatCurrency(price)}\n\nMe gustaría proceder con el pedido.`;
                                         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
                                     }}
