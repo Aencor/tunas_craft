@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '../context/DataContext';
 import SalesChart from '../components/SalesChart';
-import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown, CreditCard, ArrowUp, ArrowDown, Calculator, Archive, Store, Percent } from 'lucide-react';
+import AdminLogin from '../components/AdminLogin';
+import { Download, Upload, Trash, Trash2, CheckCircle, Package, FileText, ArrowLeft, Users, Plus, DollarSign, Eye, Edit, ShoppingBag, Menu, X, Search, ArrowUpDown, CreditCard, ArrowUp, ArrowDown, Calculator, Archive, Store, Percent, LogOut } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import { storage } from '../firebase';
@@ -11,7 +12,7 @@ import PriceCalculator from '../components/PriceCalculator';
 
 const AdminDashboard = () => {
     const { 
-        clients, orders, leads, user, loadingAuth, login, logout, 
+        clients, orders, leads, user, loadingAuth, login, loginWithEmail, loginWithGoogle, logout, 
         addClient, updateClient, deleteClient,
         addOrder, updateOrder, updateOrderStatus, deleteOrder,
         addLead, updateLead, deleteLead,
@@ -323,20 +324,10 @@ const AdminDashboard = () => {
 
     if (!user) {
         return (
-            <div className="flex flex-col items-center justify-center h-screen bg-slate-900 text-white p-4">
-                <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700 text-center max-w-md w-full">
-                     <h1 className="font-display font-bold text-3xl mb-2">Tuna's <span className="text-brand-orange">Admin</span></h1>
-                     <p className="text-slate-400 mb-8">Inicia sesión para gestionar tu negocio.</p>
-                     
-                     <button 
-                        onClick={login}
-                        className="w-full bg-white text-gray-900 font-bold py-3 px-4 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-100 transition-colors"
-                     >
-                        <img src="https://www.svgrepo.com/show/475656/google-color.svg" className="w-6 h-6" alt="Google" />
-                        Acceder con Google
-                     </button>
-                </div>
-            </div>
+            <AdminLogin 
+                onLoginWithEmail={loginWithEmail}
+                onLoginWithGoogle={loginWithGoogle}
+            />
         );
     }
 
@@ -1281,22 +1272,34 @@ Saludos, Tuna's Craft`;
                     <NavBtn id="saved_quotes" icon={<Archive />} label="Historial 3D" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                     <NavBtn id="calculator" icon={<Calculator />} label="Cotizador 3D" active={activeTab} set={(t) => { setActiveTab(t); setIsSidebarOpen(false); }} />
                 </nav>
-                <div className="mt-auto pt-6 border-t border-slate-700 space-y-2">
-                    <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white px-2">
-                        <ArrowLeft size={16} /> Ir al Sitio
+                <div className="mt-auto pt-4 border-t border-slate-700 space-y-2">
+                    {/* Active User Badge */}
+                    {user && (
+                        <div className="px-2.5 py-2 bg-slate-900/70 rounded-xl border border-slate-700/70 flex items-center justify-between">
+                            <div className="min-w-0 pr-2">
+                                <p className="text-xs font-bold text-white truncate">{user.displayName || 'Administrador'}</p>
+                                <p className="text-[10px] text-slate-400 truncate">{user.email}</p>
+                            </div>
+                            <span className="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shrink-0">
+                                Activo
+                            </span>
+                        </div>
+                    )}
+                    <Link to="/" className="flex items-center gap-2 text-slate-400 hover:text-white px-2 py-1 text-xs">
+                        <ArrowLeft size={14} /> Ir al Sitio
                     </Link>
-                    <label className="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded text-center items-center justify-center flex cursor-pointer gap-2 text-sm">
-                        <Upload size={14} /> Importar DB
+                    <label className="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded text-center items-center justify-center flex cursor-pointer gap-2 text-xs">
+                        <Upload size={13} /> Importar DB
                         <input type="file" className="hidden" accept=".json" onChange={handleImport} />
                     </label>
-                    <button onClick={handleBackUp} className="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded text-center items-center justify-center flex cursor-pointer gap-2 text-sm">
-                        <Download size={14} /> Exportar DB (Backup)
+                    <button onClick={handleBackUp} className="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded text-center items-center justify-center flex cursor-pointer gap-2 text-xs">
+                        <Download size={13} /> Exportar DB (Backup)
                     </button>
-                    <button onClick={handleGenerateShortIds} className="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded text-center items-center justify-center flex cursor-pointer gap-2 text-sm text-brand-orange">
-                        <Upload size={14} /> Reparar DB (Short IDs)
+                    <button onClick={handleGenerateShortIds} className="w-full bg-slate-700 hover:bg-slate-600 p-2 rounded text-center items-center justify-center flex cursor-pointer gap-2 text-xs text-brand-orange">
+                        <Upload size={13} /> Reparar DB (Short IDs)
                     </button>
-                    <button onClick={logout} className="w-full bg-red-900/30 hover:bg-red-900/50 text-red-200 p-2 rounded flex items-center justify-center gap-2 text-sm transition-colors">
-                        <Trash2 size={14} /> Cerrar Sesión
+                    <button onClick={logout} className="w-full bg-red-950/40 hover:bg-red-900/50 text-red-200 border border-red-900/40 p-2 rounded-xl flex items-center justify-center gap-2 text-xs transition-colors font-semibold">
+                        <LogOut size={13} /> Cerrar Sesión
                     </button>
                 </div>
              </aside>

@@ -1,11 +1,29 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { db, auth } from '../firebase';
 import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from 'firebase/firestore';
-import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
 
 const DataContext = createContext();
 
 export const useData = () => useContext(DataContext);
+
+// Default Administrator Credentials
+export const DEFAULT_ADMIN_USERS = [
+    {
+        email: 'kikemura07@gmail.com',
+        password: 'LordPug$040786',
+        displayName: 'Enrique',
+        role: 'admin'
+    },
+    {
+        email: 'dreaminginwinter@gmail.com',
+        password: 'aeryjun25',
+        displayName: 'Xio',
+        role: 'admin'
+    }
+];
+
+const ALLOWED_EMAILS = DEFAULT_ADMIN_USERS.map(u => u.email.toLowerCase());
 
 export const DataProvider = ({ children }) => {
     // Entities
@@ -28,90 +46,212 @@ export const DataProvider = ({ children }) => {
     const productsCollection = collection(db, 'products'); // New collection
     const couponsCollection = collection(db, 'coupons'); // New collection
 
-    // Auth & Listeners
+    // Initial Auth Restoration from Local Storage & Firebase
     useEffect(() => {
+        let isMounted = true;
+
+        const checkSavedSession = async () => {
+            try {
+                const stored = localStorage.getItem('tc_admin_session');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (parsed && parsed.email && ALLOWED_EMAILS.includes(parsed.email.toLowerCase())) {
+                        if (isMounted) setUser(parsed);
+
+                        // Ensure anonymous auth is active in background for Firestore security rules
+                        if (!auth.currentUser) {
+                            try {
+                                await signInAnonymously(auth);
+                            } catch (e) {
+                                console.warn('Background anonymous auth:', e);
+                            }
+                        }
+                    } else {
+                        localStorage.removeItem('tc_admin_session');
+                    }
+                }
+            } catch (e) {
+                console.warn('Session parse error:', e);
+            } finally {
+                if (isMounted) setLoadingAuth(false);
+            }
+        };
+
+        checkSavedSession();
+
+        // Also listen to Google / Firebase Auth state changes
         const unsubAuth = onAuthStateChanged(auth, (currentUser) => {
-            if (currentUser) {
-                const allowedEmails = ['kikemura07@gmail.com', 'dreaminginwinter@gmail.com'];
-                if (!allowedEmails.includes(currentUser.email)) {
+            if (currentUser && currentUser.email) {
+                if (!ALLOWED_EMAILS.includes(currentUser.email.toLowerCase())) {
                     signOut(auth);
-                    alert("Acceso denegado: El correo no está autorizado para acceder al panel de administración.");
-                    setUser(null);
-                    setLoadingAuth(false);
+                    if (isMounted) {
+                        setUser(null);
+                        setLoadingAuth(false);
+                    }
                     return;
                 }
-            }
-
-            setUser(currentUser);
-            setLoadingAuth(false);
-            
-            if (currentUser) {
-                // Subscribe to data only when logged in
-                const unsubClients = onSnapshot(clientsCollection, (snapshot) => {
-                    setClients(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                });
-                const unsubOrders = onSnapshot(ordersCollection, (snapshot) => {
-                    setOrders(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                });
-                const unsubLeads = onSnapshot(leadsCollection, (snapshot) => {
-                    setLeads(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                });
-                const unsubExpenses = onSnapshot(expensesCollection, (snapshot) => {
-                    setExpenses(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                });
-                const unsubQuotes = onSnapshot(quotesCollection, (snapshot) => {
-                    setQuotes(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                });
-                const unsubProducts = onSnapshot(productsCollection, (snapshot) => {
-                    setProducts(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                });
-                const unsubCoupons = onSnapshot(couponsCollection, (snapshot) => {
-                    setCoupons(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
-                });
-
-                return () => {
-                    unsubClients();
-                    unsubOrders();
-                    unsubLeads();
-                    unsubExpenses();
-                    unsubQuotes();
-                    unsubProducts();
-                    unsubCoupons();
+                const session = {
+                    email: currentUser.email,
+                    displayName: currentUser.displayName || currentUser.email.split('@')[0],
+                    role: 'admin',
+                    uid: currentUser.uid
                 };
-            } else {
-                // Clear state on logout
-                setClients([]);
-                setOrders([]);
-                setLeads([]);
-                setExpenses([]);
-                setQuotes([]);
-                setProducts([]);
-                setCoupons([]);
+                try {
+                    localStorage.setItem('tc_admin_session', JSON.stringify(session));
+                } catch (e) {}
+                if (isMounted) {
+                    setUser(session);
+                    setLoadingAuth(false);
+                }
             }
         });
 
-        return () => unsubAuth();
+        return () => {
+            isMounted = false;
+            unsubAuth();
+        };
     }, []);
 
-    const login = async () => {
+    // Subscribe to Firestore collections whenever user is authenticated
+    useEffect(() => {
+        if (!user) {
+            setClients([]);
+            setOrders([]);
+            setLeads([]);
+            setExpenses([]);
+            setQuotes([]);
+            setProducts([]);
+            setCoupons([]);
+            return;
+        }
+
+        const unsubClients = onSnapshot(clientsCollection, (snapshot) => {
+            setClients(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        }, (err) => console.warn('Error reading clients:', err));
+
+        const unsubOrders = onSnapshot(ordersCollection, (snapshot) => {
+            setOrders(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        }, (err) => console.warn('Error reading orders:', err));
+
+        const unsubLeads = onSnapshot(leadsCollection, (snapshot) => {
+            setLeads(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        }, (err) => console.warn('Error reading leads:', err));
+
+        const unsubExpenses = onSnapshot(expensesCollection, (snapshot) => {
+            setExpenses(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        }, (err) => console.warn('Error reading expenses:', err));
+
+        const unsubQuotes = onSnapshot(quotesCollection, (snapshot) => {
+            setQuotes(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        }, (err) => console.warn('Error reading quotes:', err));
+
+        const unsubProducts = onSnapshot(productsCollection, (snapshot) => {
+            setProducts(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        }, (err) => console.warn('Error reading products:', err));
+
+        const unsubCoupons = onSnapshot(couponsCollection, (snapshot) => {
+            setCoupons(snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id })));
+        }, (err) => console.warn('Error reading coupons:', err));
+
+        return () => {
+            unsubClients();
+            unsubOrders();
+            unsubLeads();
+            unsubExpenses();
+            unsubQuotes();
+            unsubProducts();
+            unsubCoupons();
+        };
+    }, [user]);
+
+    // Login with Email & Password
+    const loginWithEmail = async (email, password) => {
+        const cleanEmail = (email || '').trim().toLowerCase();
+        const cleanPass = (password || '').trim();
+
+        const matched = DEFAULT_ADMIN_USERS.find(
+            u => u.email.toLowerCase() === cleanEmail && u.password === cleanPass
+        );
+
+        if (!matched) {
+            return {
+                success: false,
+                error: 'Correo o contraseña incorrectos. Verifica tus datos de acceso.'
+            };
+        }
+
+        // Establish Firebase Auth session (anonymous sign-in) so Firestore rules (request.auth != null) are satisfied
+        if (!auth.currentUser) {
+            try {
+                await signInAnonymously(auth);
+            } catch (err) {
+                console.warn('Anonymous sign-in for Firestore rules notice:', err);
+            }
+        }
+
+        const adminSession = {
+            email: matched.email,
+            displayName: matched.displayName,
+            role: matched.role,
+            uid: auth.currentUser?.uid || `admin_${matched.email}`,
+            loginAt: Date.now()
+        };
+
+        try {
+            localStorage.setItem('tc_admin_session', JSON.stringify(adminSession));
+        } catch (e) {
+            console.warn('Could not save session in localStorage', e);
+        }
+
+        setUser(adminSession);
+        return { success: true, user: adminSession };
+    };
+
+    // Login with Google (Alternative)
+    const loginWithGoogle = async () => {
         const provider = new GoogleAuthProvider();
         try {
-            await signInWithPopup(auth, provider);
+            const result = await signInWithPopup(auth, provider);
+            const googleUser = result.user;
+            if (googleUser && !ALLOWED_EMAILS.includes(googleUser.email.toLowerCase())) {
+                await signOut(auth);
+                alert("Acceso denegado: El correo no está autorizado para acceder al panel de administración.");
+                setUser(null);
+                return { success: false, error: 'Correo no autorizado' };
+            }
+            const adminSession = {
+                email: googleUser.email,
+                displayName: googleUser.displayName || googleUser.email.split('@')[0],
+                role: 'admin',
+                uid: googleUser.uid,
+                loginAt: Date.now()
+            };
+            try {
+                localStorage.setItem('tc_admin_session', JSON.stringify(adminSession));
+            } catch (e) {}
+            setUser(adminSession);
+            return { success: true, user: adminSession };
         } catch (error) {
             console.error("Login failed", error);
             if (error.code === 'auth/unauthorized-domain') {
                 alert("Error: El dominio no está autorizado. Ve a Firebase Console -> Authentication -> Settings -> Authorized Domains y agrega 'tunascraft.com'.");
             } else {
-                alert("Error al iniciar sesión: " + error.message);
+                alert("Error al iniciar sesión con Google: " + error.message);
             }
+            return { success: false, error: error.message };
         }
     };
 
+    // Logout
     const logout = async () => {
         try {
+            localStorage.removeItem('tc_admin_session');
+            setUser(null);
             await signOut(auth);
         } catch (error) {
             console.error("Logout failed", error);
+            localStorage.removeItem('tc_admin_session');
+            setUser(null);
         }
     };
 
@@ -357,7 +497,8 @@ export const DataProvider = ({ children }) => {
     return (
         <DataContext.Provider value={{
             clients, orders, leads, user, loadingAuth,
-            login, logout,
+            login: loginWithEmail, loginWithEmail, loginWithGoogle, logout,
+            DEFAULT_ADMIN_USERS,
             addClient, updateClient, deleteClient,
             addOrder, updateOrderStatus, updateOrder, deleteOrder,
             addLead, updateLeadStatus,
