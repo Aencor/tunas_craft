@@ -628,7 +628,7 @@ const Catalog = () => {
 
                                     {/* WhatsApp Direct Inquire */}
                                     <a 
-                                        href={`https://wa.me/525534476672?text=${encodeURIComponent(`Hola Tuna's Craft, me interesa este producto de su catálogo: ${selectedProduct.name} (${selectedProduct.price})`)}`}
+                                        href={`https://wa.me/525544744531?text=${encodeURIComponent(`Hola Tuna's Craft, me interesa este producto de su catálogo: ${selectedProduct.name} (${selectedProduct.price})`)}`}
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-xl border border-slate-700 transition-colors flex items-center justify-center gap-2"

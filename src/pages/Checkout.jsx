@@ -154,7 +154,7 @@ const Checkout = () => {
         }
 
         // Generate WhatsApp Link
-        const phoneNumber = "525534476672"; // Updated WhatsApp number for online orders
+        const phoneNumber = "525544744531"; // Updated WhatsApp number for online orders
         
         let message = `¡Hola! Quiero realizar un pedido en línea.%0A%0A`;
         if (orderId !== 'WhatsApp') {
