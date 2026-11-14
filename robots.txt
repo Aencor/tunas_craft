@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /venta-tienda
+Disallow: /venta-fisica
+
+Sitemap: https://tunascraft.com/sitemap.xml

@@ -1,21 +1,25 @@
 {
-  "name": "Tunas Craft Admin",
-  "short_name": "TunasAdmin",
-  "start_url": "/admin",
+  "name": "Tuna's Craft | Impresión 3D & Modelado Digital",
+  "short_name": "Tuna's Craft",
+  "description": "Estudio profesional de impresión 3D, prototipado y modelado digital en Ciudad de México con envíos a todo el país.",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",
   "orientation": "portrait",
+  "lang": "es-MX",
   "icons": [
     {
       "src": "/logo.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
       "src": "/logo.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
