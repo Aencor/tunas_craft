@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Lock, Mail, Eye, EyeOff, ShieldCheck, AlertCircle, ArrowLeft, UserCheck } from 'lucide-react';
-import { DEFAULT_ADMIN_USERS } from '../context/DataContext';
+import { Lock, Mail, Eye, EyeOff, ShieldCheck, AlertCircle, ArrowLeft } from 'lucide-react';
 
 const AdminLogin = ({ onLoginWithEmail, onLoginWithGoogle }) => {
     const [email, setEmail] = useState('');
@@ -9,15 +8,6 @@ const AdminLogin = ({ onLoginWithEmail, onLoginWithGoogle }) => {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [selectedUserKey, setSelectedUserKey] = useState(null);
-
-    // Quick selection of pre-configured admins
-    const handleSelectAdmin = (adminUser) => {
-        setEmail(adminUser.email);
-        setPassword(adminUser.password);
-        setSelectedUserKey(adminUser.email);
-        setError('');
-    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -78,41 +68,8 @@ const AdminLogin = ({ onLoginWithEmail, onLoginWithGoogle }) => {
                         Tuna's <span className="text-brand-orange">Admin</span>
                     </h1>
                     <p className="text-xs text-slate-400 mt-1">
-                        Panel de Administración y Control
+                        Ingresa con tus credenciales de administrador
                     </p>
-                </div>
-
-                {/* Quick Select Admin Users */}
-                <div className="mb-6 bg-slate-950/70 p-3 rounded-xl border border-slate-800">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 mb-2 flex items-center gap-1.5">
-                        <UserCheck size={13} className="text-brand-orange" />
-                        <span>Acceso Rápido Autorizado</span>
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                        {DEFAULT_ADMIN_USERS.map((admin) => {
-                            const isSelected = selectedUserKey === admin.email;
-                            return (
-                                <button
-                                    key={admin.email}
-                                    type="button"
-                                    onClick={() => handleSelectAdmin(admin)}
-                                    className={`py-2 px-3 rounded-lg text-left transition-all border text-xs flex flex-col ${
-                                        isSelected
-                                            ? 'bg-slate-800 border-brand-orange text-white ring-1 ring-brand-orange'
-                                            : 'bg-slate-900 border-slate-700/80 text-slate-300 hover:border-slate-600 hover:bg-slate-800/60'
-                                    }`}
-                                >
-                                    <span className="font-bold text-white flex items-center justify-between">
-                                        {admin.displayName}
-                                        {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-brand-orange" />}
-                                    </span>
-                                    <span className="text-[10px] text-slate-400 truncate mt-0.5">
-                                        {admin.email}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div>
                 </div>
 
                 {/* Error Alert */}
@@ -138,7 +95,8 @@ const AdminLogin = ({ onLoginWithEmail, onLoginWithGoogle }) => {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                placeholder="kikemura07@gmail.com"
+                                placeholder="correo@ejemplo.com"
+                                autoFocus
                                 required
                                 className="w-full pl-10 pr-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white text-sm placeholder-slate-500 focus:outline-none focus:border-brand-orange focus:ring-1 focus:ring-brand-orange transition-colors"
                             />
