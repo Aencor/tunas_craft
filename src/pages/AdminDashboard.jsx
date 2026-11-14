@@ -664,7 +664,8 @@ const AdminDashboard = () => {
             await addProduct({
                 name: data.name,
                 category: data.category,
-                price: parseFloat(data.price),
+                price: parseFloat(data.price) || 0,
+                description: data.description || '',
                 photo: photoUrl
             });
             setNewProductModal(false);
@@ -708,7 +709,8 @@ const AdminDashboard = () => {
             await updateProduct(editProductModal.id, {
                 name: data.name,
                 category: data.category,
-                price: parseFloat(data.price),
+                price: parseFloat(data.price) || 0,
+                description: data.description || '',
                 photo: photoUrl
             });
             setEditProductModal(null);
@@ -754,6 +756,48 @@ const AdminDashboard = () => {
         }
     };
 
+    // Robust CSV row parser supporting escaped quotes, commas inside quotes, multi-line values
+    const parseCSVRows = (csvText) => {
+        const rows = [];
+        let curRow = [];
+        let curCell = '';
+        let inQuotes = false;
+        const textNorm = csvText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+
+        for (let i = 0; i < textNorm.length; i++) {
+            const char = textNorm[i];
+            const nextChar = textNorm[i + 1];
+
+            if (char === '"') {
+                if (inQuotes && nextChar === '"') {
+                    curCell += '"';
+                    i++; // skip escaped quote
+                } else {
+                    inQuotes = !inQuotes;
+                }
+            } else if (char === ',' && !inQuotes) {
+                curRow.push(curCell.trim());
+                curCell = '';
+            } else if (char === '\n' && !inQuotes) {
+                curRow.push(curCell.trim());
+                if (curRow.some(cell => cell !== '')) {
+                    rows.push(curRow);
+                }
+                curRow = [];
+                curCell = '';
+            } else {
+                curCell += char;
+            }
+        }
+        if (curCell !== '' || curRow.length > 0) {
+            curRow.push(curCell.trim());
+            if (curRow.some(cell => cell !== '')) {
+                rows.push(curRow);
+            }
+        }
+        return rows;
+    };
+
     const handleImportCSV = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
@@ -764,80 +808,150 @@ const AdminDashboard = () => {
         reader.onload = async (event) => {
             try {
                 const text = event.target.result;
-                const lines = text.split('\n').filter(line => line.trim() !== '');
-                if (lines.length < 2) {
-                    alert('El archivo CSV parece estar vacío o no tiene el formato correcto (requiere encabezados).');
+                const parsedRows = parseCSVRows(text);
+                if (parsedRows.length < 2) {
+                    alert('El archivo CSV parece estar vacío o no tiene el formato correcto (requiere fila de encabezados y al menos una fila de datos).');
                     return;
                 }
 
-                // Parse line helper
-                const parseCSVLine = (line) => {
-                    const result = [];
-                    let curVal = '';
-                    let inQuotes = false;
-                    for (let i = 0; i < line.length; i++) {
-                        if (line[i] === '"') {
-                            inQuotes = !inQuotes;
-                        } else if (line[i] === ',' && !inQuotes) {
-                            result.push(curVal.trim());
-                            curVal = '';
-                        } else {
-                            curVal += line[i];
-                        }
-                    }
-                    result.push(curVal.trim());
-                    return result.map(v => v.replace(/^"|"$/g, '').trim()); // remove wrapping quotes
-                };
-
-                const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+                // Headers in lowercase and trimmed
+                const headers = parsedRows[0].map(h => h.toLowerCase().trim().replace(/^"|"$/g, ''));
                 let importedCount = 0;
-                let skippedCount = 0;
-                
-                for (let i = 1; i < lines.length; i++) {
-                    const row = parseCSVLine(lines[i]);
-                    if (row.length < 2) continue; // Skip malformed lines
-                    
+                let updatedCount = 0;
+                let unchangedCount = 0;
+
+                for (let i = 1; i < parsedRows.length; i++) {
+                    const row = parsedRows[i];
+                    if (!row || row.length === 0) continue;
+
                     const productData = {};
                     headers.forEach((header, index) => {
-                        productData[header] = row[index] || '';
+                        productData[header] = (row[index] || '').replace(/^"|"$/g, '').trim();
                     });
 
-                    // Build final product object
-                    // Looking for 'name', 'photo' or 'image', 'category', 'price'
                     const prodName = productData.name || productData.nombre;
-                    if (prodName) {
-                        const existingProduct = products.find(p => p.name.toLowerCase() === prodName.toLowerCase());
-                        
-                        if (!existingProduct) {
-                            const rawPriceStr = productData.price || productData.precio || '0';
-                            const rawPrice = rawPriceStr.replace(/[^0-9.]/g, ''); // Extract numbers
-                            const photoUrl = productData.photo || productData.image || productData.foto || productData.imagen || '';
-                            const category = productData.category || productData.categoria || productData.categoría || 'Otros';
+                    if (!prodName) continue;
 
-                            await addProduct({
+                    const rawPriceStr = productData.price || productData.precio || '0';
+                    const cleanPrice = parseFloat(rawPriceStr.replace(/[^0-9.]/g, '')) || 0;
+                    const photoUrl = productData.photo || productData.image || productData.foto || productData.imagen || '';
+                    const category = productData.category || productData.categoria || productData.categoría || 'Otros';
+                    const description = productData['descripción'] || productData['descripcion'] || productData['description'] || productData['desc'] || '';
+                    const rawQuantity = productData.quantity !== undefined && productData.quantity !== '' ? parseInt(productData.quantity) : 1;
+                    const rawAvailability = productData.availability !== undefined && productData.availability !== '' ? parseInt(productData.availability) : 1;
+
+                    // Match existing product by name (case-insensitive)
+                    const existingProduct = products.find(p => p.name && p.name.trim().toLowerCase() === prodName.trim().toLowerCase());
+
+                    if (existingProduct) {
+                        const existingDesc = existingProduct.description || existingProduct.descripción || '';
+                        const existingCategory = existingProduct.category || 'Otros';
+                        const existingPrice = parseFloat(existingProduct.price) || 0;
+                        const existingPhoto = existingProduct.photo || '';
+
+                        const hasChanged = 
+                            category !== existingCategory ||
+                            Math.abs(cleanPrice - existingPrice) > 0.001 ||
+                            (description && description !== existingDesc) ||
+                            (photoUrl && photoUrl !== existingPhoto);
+
+                        if (hasChanged || (description && !existingDesc)) {
+                            await updateProduct(existingProduct.id, {
                                 name: prodName,
                                 category: category,
-                                price: parseFloat(rawPrice) || 0,
-                                photo: photoUrl
+                                price: cleanPrice,
+                                photo: photoUrl || existingPhoto,
+                                description: description || existingDesc,
+                                quantity: isNaN(rawQuantity) ? 1 : rawQuantity,
+                                availability: isNaN(rawAvailability) ? 1 : rawAvailability
                             });
-                            importedCount++;
+                            updatedCount++;
                         } else {
-                            skippedCount++;
+                            unchangedCount++;
                         }
+                    } else {
+                        await addProduct({
+                            name: prodName,
+                            category: category,
+                            price: cleanPrice,
+                            photo: photoUrl,
+                            description: description,
+                            quantity: isNaN(rawQuantity) ? 1 : rawQuantity,
+                            availability: isNaN(rawAvailability) ? 1 : rawAvailability
+                        });
+                        importedCount++;
                     }
                 }
-                
-                alert(`Importación completada. Se añadieron ${importedCount} productos nuevos y se omitieron ${skippedCount} duplicados.`);
+
+                alert(`Importación completada con éxito:\n\n• ${importedCount} productos nuevos añadidos\n• ${updatedCount} productos actualizados con nuevos datos\n• ${unchangedCount} productos sin cambios.`);
             } catch (error) {
                 console.error("Error al importar CSV:", error);
-                alert("Hubo un error al procesar el archivo CSV.");
+                alert("Hubo un error al procesar el archivo CSV: " + error.message);
             } finally {
                 setIsSubmitting(false);
-                e.target.value = ''; // Reset input so the same file can be uploaded again if needed
+                e.target.value = '';
             }
         };
 
         reader.readAsText(file);
+    };
+
+    // Export sample CSV template matching user's exact specification
+    const handleDownloadSampleCSV = () => {
+        const sampleCSVContent = `name,photo,category,quantity,price,sell,availability,Ganancia,,Ganancia total,descripción
+Joyero Cajonera 175mm,https://drive.google.com/file/d/1aZQMSNLaZMxiLNw2FWjGfi3Kp-bi_zuo/view?usp=drive_link,Goth,1,$220.00,1,0,$220.00,,"$6,175.00","Cajonera joyero gótica de 175 mm impresa en 3D, con cajones para guardar joyería y accesorios."
+Goth Bowl,https://drive.google.com/file/d/1dnGa-nIhDfi3p5hNynx_myT_5vKFX7Jd/view?usp=drive_link,Goth,1,$200.00,1,0,$200.00,,,"Tazón decorativo estilo gótico impreso en 3D, ideal para escritorio o altar."
+Skull Phone Stand,https://drive.google.com/file/d/1pHxU5twB5RMQrrak1AkwiYrtrCTouoMw/view?usp=drive_link,Goth,1,$80.00,1,0,$80.00,,,"Soporte para celular en forma de calavera, impreso en 3D."
+Sombrero Anillero,https://drive.google.com/file/d/17wIaJTizPuOml7QHkpD_lUENGtSGhn6I/view?usp=drive_link,Goth,1,$100.00,1,0,$100.00,,,"Anillero en forma de sombrero, impreso en 3D, para guardar y exhibir anillos."
+Mano anillos 1 color,https://drive.google.com/file/d/1ckrAa-Tl3H2Tm7ngMrK9GqPQq-VV5-Rs/view?usp=drive_link,Goth,1,$120.00,1,0,$120.00,,,"Mano porta anillos de un color, impresa en 3D."
+Soporte para control PS5 Cubone calavera,https://drive.google.com/file/d/1uVT35ig0gMOahU6uRcp3590FaTP-QM6t/view?usp=drive_link,Gaming,1,$200.00,0,1,$0.00,,,"Soporte para control de PS5 en forma de calavera de Cubone, impreso en 3D en color blanco."
+Porta kleenex Ditto rosa,https://drive.google.com/file/d/1HdEwdN7zyUr5CA6Sw-nqQNiHhQVHNdEZ/view?usp=drive_link,Pokémon,1,$300.00,0,1,$0.00,,,"Porta kleenex Ditto rosa impreso en 3D, con la servilleta saliendo de su boca."`;
+
+        const blob = new Blob(['\uFEFF' + sampleCSVContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'plantilla_productos_muestra_tunas_craft.csv');
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    // Export current live database products to CSV
+    const handleExportCatalogCSV = () => {
+        const headers = ['name', 'photo', 'category', 'quantity', 'price', 'sell', 'availability', 'Ganancia', '', 'Ganancia total', 'descripción'];
+        
+        const escapeCSV = (str) => {
+            if (str === null || str === undefined) return '""';
+            const s = String(str).replace(/"/g, '""');
+            return `"${s}"`;
+        };
+
+        const rows = products.map(p => {
+            const name = escapeCSV(p.name || '');
+            const photo = escapeCSV(p.photo || '');
+            const category = escapeCSV(p.category || 'Otros');
+            const quantity = p.quantity !== undefined ? p.quantity : 1;
+            const price = `$${parseFloat(p.price || 0).toFixed(2)}`;
+            const sell = p.sell !== undefined ? p.sell : 0;
+            const availability = p.availability !== undefined ? p.availability : 1;
+            const ganancia = `$${parseFloat(p.price || 0).toFixed(2)}`;
+            const emptyCol = '';
+            const gananciaTotal = '';
+            const description = escapeCSV(p.description || p.descripción || '');
+
+            return [name, photo, category, quantity, price, sell, availability, ganancia, emptyCol, gananciaTotal, description].join(',');
+        });
+
+        const csvContent = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `catalogo_tunas_craft_${new Date().toISOString().slice(0, 10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     };
 
 
@@ -930,7 +1044,7 @@ const AdminDashboard = () => {
                     const statusLink = `${window.location.origin}/status`; 
                     const itemsList = orderData.items.map(i => `- ${i.qty}x ${i.desc}`).join('\n');
                     
-                    const message = `¡Hola ${selectedClient.name || 'Cliente'}! Tu pedido ha sido confirmado en Tuna's Craft 🌵\n\nResumen de tu pedido:\n${itemsList}\nTotal: $${orderData.total}\nAnticipo: $${orderData.advance}\nRestante: $${orderData.remaining}\n\nPuedes revisar el estatus de tu pedido aquí: ${statusLink}\n\n¡Gracias por tu preferencia!`;
+                    const message = `¡Hola ${selectedClient.name || 'Cliente'}! Tu pedido ha sido confirmado en Tuna's Craft.\n\nResumen de tu pedido:\n${itemsList}\nTotal: $${orderData.total}\nAnticipo: $${orderData.advance}\nRestante: $${orderData.remaining}\n\nPuedes revisar el estatus de tu pedido aquí: ${statusLink}\n\n¡Gracias por tu preferencia!`;
                     
                     const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
                     window.open(url, '_blank');
@@ -1057,7 +1171,7 @@ ${itemsList}
         
 Puedes revisar el avance y detalles aquí: ${statusLink}
         
-Saludos, Tuna's Craft 🌵`;
+Saludos, Tuna's Craft`;
 
         const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
@@ -1744,9 +1858,18 @@ Saludos, Tuna's Craft 🌵`;
                                     ))}
                                 </select>
                                 
-                                <div className="flex gap-2 w-full md:w-auto mt-2 md:mt-0">
-                                    <label className="bg-slate-700 hover:bg-slate-600 cursor-pointer px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 transition-colors flex-1 md:flex-auto">
-                                        <Upload size={18} />
+                                <div className="flex flex-wrap gap-2 w-full md:w-auto mt-2 md:mt-0">
+                                    <button 
+                                        type="button"
+                                        onClick={handleDownloadSampleCSV} 
+                                        className="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-colors text-xs text-slate-200 border border-slate-600"
+                                        title="Descargar archivo CSV de muestra preformateado"
+                                    >
+                                        <Download size={16} />
+                                        <span>Plantilla CSV</span>
+                                    </button>
+                                    <label className="bg-slate-700 hover:bg-slate-600 cursor-pointer px-3 py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-colors text-xs text-slate-200 border border-slate-600">
+                                        <Upload size={16} />
                                         <span>Importar CSV</span>
                                         <input 
                                             type="file" 
@@ -1756,8 +1879,17 @@ Saludos, Tuna's Craft 🌵`;
                                             disabled={isSubmitting}
                                         />
                                     </label>
-                                    <button onClick={() => setNewProductModal(true)} className="bg-brand-blue hover:bg-blue-600 px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 flex-1 md:flex-auto">
-                                        <Plus size={18} /> Nuevo Producto
+                                    <button 
+                                        type="button"
+                                        onClick={handleExportCatalogCSV} 
+                                        className="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-colors text-xs text-slate-200 border border-slate-600"
+                                        title="Exportar todos los productos actuales a CSV"
+                                    >
+                                        <FileText size={16} />
+                                        <span>Exportar CSV</span>
+                                    </button>
+                                    <button onClick={() => setNewProductModal(true)} className="bg-brand-blue hover:bg-blue-600 px-4 py-2 rounded-lg font-bold flex items-center justify-center gap-2 text-xs">
+                                        <Plus size={16} /> Nuevo Producto
                                     </button>
                                 </div>
                             </div>
@@ -1769,7 +1901,7 @@ Saludos, Tuna's Craft 🌵`;
                                 <thead className="bg-slate-700/50 text-slate-300">
                                     <tr>
                                         <th className="p-4 w-20">Foto</th>
-                                        <th className="p-4">Nombre</th>
+                                        <th className="p-4">Producto y Descripción</th>
                                         <th className="p-4">Categoría</th>
                                         <th className="p-4">Precio</th>
                                         <th className="p-4 text-center">Acciones</th>
@@ -1785,7 +1917,14 @@ Saludos, Tuna's Craft 🌵`;
                                                     <div className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center text-slate-500"><ShoppingBag size={20} /></div>
                                                 )}
                                             </td>
-                                            <td className="p-4 font-bold">{product.name}</td>
+                                            <td className="p-4">
+                                                <div className="font-bold text-white">{product.name}</div>
+                                                {(product.description || product.descripción) && (
+                                                    <p className="text-xs text-slate-400 mt-1 line-clamp-2 max-w-md">
+                                                        {product.description || product.descripción}
+                                                    </p>
+                                                )}
+                                            </td>
                                             <td className="p-4 text-slate-400 text-sm">{product.category || '-'}</td>
                                             <td className="p-4 text-brand-orange font-bold">${parseFloat(product.price).toFixed(2)}</td>
                                             <td className="p-4">
@@ -2860,6 +2999,10 @@ Saludos, Tuna's Craft 🌵`;
                                 <input name="price" type="number" step="0.01" min="0" className="w-full bg-slate-900 border border-slate-600 rounded p-2" required placeholder="0.00" />
                             </div>
                             <div>
+                                <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Descripción</label>
+                                <textarea name="description" rows="3" placeholder="Descripción detallada del producto, características, medidas..." className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-slate-100 focus:outline-none focus:border-brand-blue" />
+                            </div>
+                            <div>
                                 <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Foto Destacada</label>
                                 <input 
                                     name="photoFile" 
@@ -2899,6 +3042,10 @@ Saludos, Tuna's Craft 🌵`;
                             <div>
                                 <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Precio Unitario ($)</label>
                                 <input name="price" defaultValue={editProductModal.price} type="number" step="0.01" min="0" className="w-full bg-slate-900 border border-slate-600 rounded p-2" required />
+                            </div>
+                            <div>
+                                <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Descripción</label>
+                                <textarea name="description" defaultValue={editProductModal.description || editProductModal.descripción || ''} rows="3" placeholder="Descripción detallada del producto, características, medidas..." className="w-full bg-slate-900 border border-slate-600 rounded p-2 text-sm text-slate-100 focus:outline-none focus:border-brand-blue" />
                             </div>
                             <div>
                                 <label className="block text-xs mb-1 text-slate-400 font-bold uppercase">Foto Destacada</label>

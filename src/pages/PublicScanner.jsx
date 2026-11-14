@@ -250,7 +250,7 @@ const PublicScanner = () => {
                                     disabled={!file || isThinking}
                                     onClick={() => {
                                         const phone = '525534476672';
-                                        const msg = `Hola Tuna's Craft 🌵, coticé una pieza en su web:\n\n- Material: ${material}\n- Peso Est: ${estimatedWeight.toFixed(1)}g\n- Precio Est: ${formatCurrency(price)}\n\nMe gustaría proceder con el pedido.`;
+                                        const msg = `Hola Tuna's Craft, coticé una pieza en su web:\n\n- Material: ${material}\n- Peso Est: ${estimatedWeight.toFixed(1)}g\n- Precio Est: ${formatCurrency(price)}\n\nMe gustaría proceder con el pedido.`;
                                         window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
                                     }}
                                     className={`w-full py-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shadow-lg ${

@@ -13,14 +13,18 @@ export const useGallery = () => {
         const querySnapshot = await getDocs(q);
         const fetchedProducts = querySnapshot.docs.map(doc => {
           const data = doc.data();
+          const numericPrice = parseFloat(data.price) || 0;
           return {
             id: doc.id,
             name: data.name || 'Sin nombre',
-            price: data.price ? `$${parseFloat(data.price).toFixed(2)}` : '$0.00',
-            quantity: 1, // Defaulting to available
+            price: `$${numericPrice.toFixed(2)}`,
+            rawPrice: numericPrice,
+            quantity: data.quantity !== undefined ? Number(data.quantity) : 1,
+            availability: data.availability !== undefined ? Number(data.availability) : 1,
             category: data.category || 'Otros',
-            image: data.photo || '',
-            color: "#2563EB" // Default color theme inherited from previous implementation
+            image: data.photo || data.image || '',
+            description: data.description || data.descripción || '',
+            color: "#2563EB"
           };
         });
 

@@ -24,7 +24,7 @@ const Success = () => {
                     <CheckCircle className="text-green-500 w-12 h-12" />
                 </div>
                 
-                <h1 className="font-display text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-brand-orange to-yellow-500 mb-2">
+                <h1 className="font-display text-4xl font-bold text-amber-400 mb-2">
                     ¡Gracias, {orderData.clientName}!
                 </h1>
                 <p className="text-slate-300 text-lg mb-8">

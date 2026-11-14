@@ -207,7 +207,7 @@ const Checkout = () => {
                     <Link to="/catalogo" className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-white transition-colors">
                         <ArrowLeft size={24} />
                     </Link>
-                    <h1 className="font-display text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
+                    <h1 className="font-display text-4xl font-bold text-white tracking-tight">
                         Finalizar Pedido
                     </h1>
                 </div>

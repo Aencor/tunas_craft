@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 // import { useData } from '../context/DataContext'; // Removed dependency
 import { db } from '../firebase';
 import { collection, query as queryFirestore, where, getDocs, doc, getDoc } from 'firebase/firestore';
-import { Search, Package, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { Search, Package, Clock, CheckCircle, AlertCircle, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const OrderStatus = () => {
@@ -204,7 +204,8 @@ const OrderStatus = () => {
                                                 </div>
                                                 {order.deliveryLocation && (
                                                     <div className="flex items-center gap-2 text-sm text-gray-400 ml-6">
-                                                        <span>📍 Zona/Dirección: {order.deliveryLocation}</span>
+                                                        <MapPin size={14} className="text-amber-400" />
+                                                        <span>Zona/Dirección: {order.deliveryLocation}</span>
                                                     </div>
                                                 )}
                                             </div>
