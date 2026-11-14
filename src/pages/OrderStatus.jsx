@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { collection, query as queryFirestore, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { Search, Package, Clock, CheckCircle, AlertCircle, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import SEO from '../components/SEO';
 
 const OrderStatus = () => {
     // Remove global data dependency for public search
@@ -101,6 +102,11 @@ const OrderStatus = () => {
 
     return (
         <div className="min-h-screen bg-brand-dark text-slate-100 font-sans flex flex-col items-center p-6 md:justify-center">
+            <SEO 
+                title="Rastreador de Estatus de Pedido | Tuna's Craft"
+                description="Consulta el avance en tiempo real de tu pedido de impresión 3D en Tuna's Craft usando tu ID de pedido o teléfono."
+                canonical="https://tunascraft.com/status"
+            />
              <div className="w-full max-w-2xl mb-8 flex justify-start">
                 <Link to="/" className="text-gray-400 hover:text-white flex items-center gap-2">&larr; Volver</Link>
              </div>

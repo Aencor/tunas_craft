@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useData } from '../context/DataContext';
 import { ArrowLeft, Upload, FileText, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import SEO from '../components/SEO';
 
 
 const Quote = () => {
@@ -65,6 +66,11 @@ const Quote = () => {
 
     return (
         <div className="bg-slate-950 min-h-screen text-slate-100 font-sans py-16 px-4">
+            <SEO 
+                title="Cotización Personalizada de Impresión 3D | Tuna's Craft"
+                description="Solicita una cotización personalizada para tus piezas, prototipos y proyectos 3D a medida en Ciudad de México y envíos a todo el país."
+                canonical="https://tunascraft.com/quote"
+            />
             <div className="max-w-2xl mx-auto">
                 <Link to="/" className="inline-flex items-center text-slate-400 hover:text-white mb-8 transition-colors text-sm font-medium">
                     <ArrowLeft className="mr-2" size={18} /> Volver al Inicio

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Hero3D from '../components/Hero3D';
 import AdSense from '../components/AdSense';
+import SEO from '../components/SEO';
 import { 
     Menu, X, Instagram, Facebook, Ruler, Palette, Home, 
     Package, HelpCircle, Sparkles, ArrowRight, CheckCircle2, 
@@ -51,6 +52,11 @@ const Landing = () => {
 
     return (
         <div className="bg-slate-950 min-h-screen text-slate-100 font-sans selection:bg-amber-500 selection:text-slate-950">
+            <SEO 
+                title="Tuna's Craft | Impresión 3D, Modelado y Prototipado en CDMX y México"
+                description="Taller especializado en impresión 3D, prototipado y modelado digital en Ciudad de México (CDMX). Cotiza tus archivos STL/3MF al instante y recibe envíos a todo México."
+                canonical="https://tunascraft.com/"
+            />
             
             {/* Top Navigation */}
             <nav className={`fixed w-full z-50 transition-all duration-300 ${

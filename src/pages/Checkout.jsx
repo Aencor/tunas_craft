@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Trash2, Plus, Minus, Send } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import SEO from '../components/SEO';
 import { db } from '../firebase';
 import { collection, addDoc, updateDoc, getDocs, query, where } from 'firebase/firestore';
 import { initMercadoPago, Wallet } from '@mercadopago/sdk-react';
@@ -202,6 +203,11 @@ const Checkout = () => {
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-sans pb-16">
+            <SEO 
+                title="Finalizar Compra y Pedido | Tuna's Craft"
+                description="Revisa tus piezas en el carrito y finaliza tu pedido de impresión 3D con entregas en CDMX y envíos a todo México."
+                canonical="https://tunascraft.com/checkout"
+            />
             <div className="pt-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
                 <div className="flex items-center gap-4 mb-8">
                     <Link to="/catalogo" className="p-2 rounded-full bg-slate-800 hover:bg-slate-700 text-white transition-colors">

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { CheckCircle, ArrowRight, ShoppingBag } from 'lucide-react';
+import SEO from '../components/SEO';
 
 const Success = () => {
     const location = useLocation();
@@ -18,6 +19,11 @@ const Success = () => {
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-sans flex items-center justify-center p-4">
+            <SEO 
+                title="¡Pedido Confirmado! | Tuna's Craft"
+                description="Tu pedido ha sido recibido con éxito en Tuna's Craft."
+                canonical="https://tunascraft.com/success"
+            />
             <div className="bg-slate-800 p-8 md:p-12 rounded-2xl border border-slate-700 shadow-2xl max-w-lg w-full text-center animate-fade-in-up">
                 
                 <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">

@@ -1,33 +1,159 @@
 <!doctype html>
-<html lang="es" class="scroll-smooth">
+<html lang="es-MX" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/logo.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="referrer" content="no-referrer">
-    <title>Tuna's Craft | Impresión 3D a Medida</title>
-    
-    <!-- PWA -->
-    <link rel="manifest" href="/manifest.json" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="referrer" content="no-referrer-when-downgrade" />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="icon" type="image/png" href="/logo.png" />
     <link rel="apple-touch-icon" href="/logo.png" />
+
+    <!-- Primordial SEO Meta Tags -->
+    <title>Tuna's Craft | Impresión 3D, Modelado y Prototipado en CDMX y México</title>
+    <meta name="title" content="Tuna's Craft | Impresión 3D, Modelado y Prototipado en CDMX y México" />
+    <meta name="description" content="Estudio profesional de impresión 3D, prototipado y modelado digital en Ciudad de México (CDMX). Cotiza online tus archivos STL/3MF, explora nuestro catálogo exclusivo de piezas y recibe envíos rápidos a todo México." />
+    <meta name="keywords" content="impresion 3d cdmx, servicio de impresion 3d mexico, cotizador 3d online, prototipado rapido cdmx, modelado 3d mexico, figuras 3d personalizadas, stl mexico, taller de impresion 3d, filamento pla petg cdmx, tunas craft" />
+    <meta name="author" content="Tuna's Craft" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://tunascraft.com/" />
+
+    <!-- Geotargeting & Local SEO (CDMX / México) -->
+    <meta name="geo.region" content="MX-CMX" />
+    <meta name="geo.placename" content="Ciudad de México" />
+    <meta name="geo.position" content="19.40854;-99.13568" />
+    <meta name="ICBM" content="19.40854, -99.13568" />
+
+    <!-- Open Graph / Facebook / WhatsApp Preview -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="es_MX" />
+    <meta property="og:site_name" content="Tuna's Craft" />
+    <meta property="og:url" content="https://tunascraft.com/" />
+    <meta property="og:title" content="Tuna's Craft | Impresión 3D, Modelado y Prototipado en CDMX" />
+    <meta property="og:description" content="Servicio profesional de impresión 3D, prototipado y modelado en CDMX con envíos a todo México. Cotizador interactivo STL/3MF en tiempo real y catálogo online." />
+    <meta property="og:image" content="https://tunascraft.com/logo.png" />
+    <meta property="og:image:secure_url" content="https://tunascraft.com/logo.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:image:alt" content="Tuna's Craft - Taller de Impresión 3D" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://tunascraft.com/" />
+    <meta name="twitter:title" content="Tuna's Craft | Impresión 3D y Modelado Digital en CDMX" />
+    <meta name="twitter:description" content="Taller de impresión 3D y prototipado rápido en Ciudad de México. Cotiza en línea tus piezas en 3D con envíos a todo el país." />
+    <meta name="twitter:image" content="https://tunascraft.com/logo.png" />
+
+    <!-- Google AdSense Verification & Auto-Ads Script -->
+    <meta name="google-adsense-account" content="ca-pub-3965448004898187" />
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3965448004898187" crossorigin="anonymous"></script>
+
+    <!-- Web Performance: DNS-Prefetch & Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
+    <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin />
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@700;800&display=swap" rel="stylesheet" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="theme-color" content="#0f172a" />
-
-    <!-- Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
 
     <!-- Styles -->
     <link rel="stylesheet" href="/src/index.css" />
 
-    
-    <!-- Google tag (gtag.js) -->
+    <!-- Structured Data (JSON-LD) for LocalBusiness & WebSite -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": ["LocalBusiness", "Store", "ProfessionalService"],
+          "@id": "https://tunascraft.com/#localbusiness",
+          "name": "Tuna's Craft",
+          "alternateName": ["Tuna's Craft Impresión 3D", "Tunas Craft"],
+          "url": "https://tunascraft.com/",
+          "logo": "https://tunascraft.com/logo.png",
+          "image": "https://tunascraft.com/logo.png",
+          "description": "Estudio profesional de modelado digital, prototipado rápido e impresión 3D en Ciudad de México con envíos a todo México.",
+          "telephone": "+525544744531",
+          "priceRange": "$$",
+          "currenciesAccepted": "MXN",
+          "paymentAccepted": "Cash, Credit Card, Debit Card, Mercado Pago, PayPal, SPEI",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "Calzada de Tlalpan (Entrega principal en Metro Chabacano)",
+            "addressLocality": "Ciudad de México",
+            "addressRegion": "CDMX",
+            "postalCode": "06850",
+            "addressCountry": "MX"
+          },
+          "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 19.40854,
+            "longitude": -99.13568
+          },
+          "hasMap": "https://maps.google.com/?q=Metro+Chabacano",
+          "areaServed": [
+            {
+              "@type": "City",
+              "name": "Ciudad de México"
+            },
+            {
+              "@type": "AdministrativeArea",
+              "name": "Estado de México"
+            },
+            {
+              "@type": "Country",
+              "name": "México"
+            }
+          ],
+          "openingHoursSpecification": [
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": ["Saturday"],
+              "opens": "11:00",
+              "closes": "15:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+              "opens": "09:00",
+              "closes": "20:00"
+            }
+          ],
+          "sameAs": [
+            "https://tunascraft.com/"
+          ]
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://tunascraft.com/#website",
+          "url": "https://tunascraft.com/",
+          "name": "Tuna's Craft",
+          "description": "Impresión 3D y Modelado Digital en CDMX",
+          "publisher": {
+            "@id": "https://tunascraft.com/#localbusiness"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://tunascraft.com/catalogo?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ]
+    }
+    </script>
+
+    <!-- Google Analytics (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-BMF86Q9D45"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag(){dataLayer.push(arguments);}
       gtag('js', new Date());
-
       gtag('config', 'G-BMF86Q9D45');
     </script>
   </head>

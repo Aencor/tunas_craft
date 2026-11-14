@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calculator, DollarSign, Clock, Scale, ArrowLeft, Percent } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AdSense from '../components/AdSense';
+import SEO from '../components/SEO';
 import { Zap, Droplets } from 'lucide-react';
 
 // --- AD SENSE COMPONENT (Reused for consistency) ---
@@ -94,6 +95,11 @@ const PublicManualQuote = () => {
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-brand-orange selection:text-white">
+            <SEO 
+                title="Calculadora de Costos de Impresión 3D | Tuna's Craft"
+                description="Calcula el costo de filamento, tiempo de máquina, energía y producción de tus proyectos de impresión 3D en México."
+                canonical="https://tunascraft.com/calculadora"
+            />
             <header className="bg-slate-900/80 backdrop-blur-lg border-b border-white/10 sticky top-0 z-50">
                 <div className="max-w-4xl mx-auto px-4 h-16 flex items-center justify-between">
                     <Link to="/" className="flex items-center gap-2 group">

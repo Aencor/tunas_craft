@@ -9,6 +9,7 @@ import { useGallery } from '../hooks/useGallery';
 import { useCart } from '../context/CartContext';
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import SEO from '../components/SEO';
 
 const Catalog = () => {
     const { products, loading } = useGallery();
@@ -373,6 +374,25 @@ const Catalog = () => {
 
     return (
         <div className="bg-slate-950 min-h-screen text-slate-100 font-sans pb-24">
+            <SEO 
+                title="Catálogo de Productos y Piezas en 3D | Tuna's Craft"
+                description="Explora nuestro catálogo oficial de figuras, accesorios, organizadores y piezas personalizadas impresas en 3D de alta precisión. Envíos en CDMX y todo México."
+                canonical="https://tunascraft.com/catalogo"
+                structuredData={{
+                    "@context": "https://schema.org",
+                    "@type": "ItemList",
+                    "name": "Catálogo de Productos Tuna's Craft",
+                    "description": "Catálogo de impresiones 3D y piezas de colección en México.",
+                    "numberOfItems": products.length,
+                    "itemListElement": products.slice(0, 15).map((p, idx) => ({
+                        "@type": "ListItem",
+                        "position": idx + 1,
+                        "name": p.name,
+                        "description": p.description || p.descripción || p.name,
+                        "image": p.image || "https://tunascraft.com/logo.png"
+                    }))
+                }}
+            />
             
             {/* Top Navigation Bar */}
             <header className="sticky top-0 z-40 bg-slate-900/95 backdrop-blur border-b border-slate-800">

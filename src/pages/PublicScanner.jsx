@@ -7,6 +7,7 @@ import { Link } from 'react-router-dom';
 // Duplicate Link import removed
 import * as THREE from 'three';
 import AdBanner from '../components/AdBanner';
+import SEO from '../components/SEO';
 
 // --- AD SENSE COMPONENT ---
 // Local AdBanner removed in favor of shared component
@@ -114,6 +115,11 @@ const PublicScanner = () => {
 
     return (
         <div className="min-h-screen bg-slate-900 text-slate-100 font-sans selection:bg-brand-orange selection:text-white">
+            <SEO 
+                title="Cotizador 3D en Línea (Visor STL y 3MF) | Tuna's Craft CDMX"
+                description="Sube tu archivo STL o 3MF para obtener al instante dimensiones, peso estimado en gramos y precio de tu impresión 3D en Ciudad de México."
+                canonical="https://tunascraft.com/cotizador"
+            />
             
             {/* Header */}
             <header className="bg-slate-900/80 backdrop-blur-lg border-b border-white/10 sticky top-0 z-50">
