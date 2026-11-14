@@ -120,15 +120,99 @@ const Catalog = () => {
         setModalQuantity(1);
     };
 
-    // Export Catalog to PDF
-    const handleExportPDF = () => {
+    // Helper to format/optimize image URLs for direct fetching
+    const getOptimalImageUrl = (url) => {
+        if (!url || typeof url !== 'string' || url.trim() === '') return null;
+        const driveMatch = url.match(/(?:\/d\/|id=)([a-zA-Z0-9_-]+)/);
+        if (driveMatch && driveMatch[1]) {
+            return `https://lh3.googleusercontent.com/d/${driveMatch[1]}=w300`;
+        }
+        return url;
+    };
+
+    // Load an image and convert it to a base64 Data URL via canvas
+    const loadImageAsDataUrl = (rawUrl) => {
+        return new Promise((resolve) => {
+            const url = getOptimalImageUrl(rawUrl);
+            if (!url) return resolve(null);
+
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+
+            let timer = setTimeout(() => {
+                resolve(null);
+            }, 4500);
+
+            img.onload = () => {
+                clearTimeout(timer);
+                try {
+                    const canvas = document.createElement('canvas');
+                    const maxDim = 240;
+                    let width = img.naturalWidth || img.width || 100;
+                    let height = img.naturalHeight || img.height || 100;
+
+                    if (width > height) {
+                        if (width > maxDim) {
+                            height = Math.round((height * maxDim) / width);
+                            width = maxDim;
+                        }
+                    } else {
+                        if (height > maxDim) {
+                            width = Math.round((width * maxDim) / height);
+                            height = maxDim;
+                        }
+                    }
+
+                    canvas.width = Math.max(width, 1);
+                    canvas.height = Math.max(height, 1);
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                    resolve({ dataUrl, width, height });
+                } catch (err) {
+                    console.warn('Canvas export failed for:', url, err);
+                    resolve(null);
+                }
+            };
+
+            img.onerror = () => {
+                clearTimeout(timer);
+                resolve(null);
+            };
+
+            img.src = url;
+        });
+    };
+
+    // Export Catalog to PDF with product photos
+    const handleExportPDF = async () => {
         if (filteredProducts.length === 0) {
             alert('No hay productos que coincidan con los filtros actuales para exportar.');
             return;
         }
 
         setIsGeneratingPDF(true);
+        showToast('Preparando fotos y generando PDF...');
+
         try {
+            // Load logo and product images in parallel (in chunks to prevent browser congestion)
+            const [logoData, loadedImages] = await Promise.all([
+                loadImageAsDataUrl('/logo.png'),
+                (async () => {
+                    const results = new Array(filteredProducts.length).fill(null);
+                    const CHUNK_SIZE = 6;
+                    for (let i = 0; i < filteredProducts.length; i += CHUNK_SIZE) {
+                        const chunk = filteredProducts.slice(i, i + CHUNK_SIZE);
+                        const chunkPromises = chunk.map(async (p, idx) => {
+                            const res = await loadImageAsDataUrl(p.image);
+                            results[i + idx] = res;
+                        });
+                        await Promise.all(chunkPromises);
+                    }
+                    return results;
+                })()
+            ]);
+
             const doc = new jsPDF({
                 orientation: 'portrait',
                 unit: 'mm',
@@ -142,19 +226,30 @@ const Catalog = () => {
 
             // Header Banner (Solid primary color, no gradient)
             doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-            doc.rect(0, 0, 210, 30, 'F');
+            doc.rect(0, 0, 210, 32, 'F');
+
+            // Draw Logo in Header if available
+            let titleStartX = 14;
+            if (logoData && logoData.dataUrl) {
+                try {
+                    doc.addImage(logoData.dataUrl, 'JPEG', 14, 5, 22, 22, undefined, 'FAST');
+                    titleStartX = 40;
+                } catch (e) {
+                    titleStartX = 14;
+                }
+            }
 
             // Header Title
             doc.setTextColor(255, 255, 255);
             doc.setFont('helvetica', 'bold');
             doc.setFontSize(16);
-            doc.text("TUNA'S CRAFT", 14, 13);
+            doc.text("TUNA'S CRAFT", titleStartX, 13);
 
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(8);
             doc.setTextColor(203, 213, 225);
-            doc.text("ESTUDIO DE IMPRESIÓN 3D & MODELADO DIGITAL", 14, 19);
-            doc.text("Sitio web: tunascraft.com · CDMX, México · Envíos a todo el país", 14, 24);
+            doc.text("ESTUDIO DE IMPRESIÓN 3D & MODELADO DIGITAL", titleStartX, 19);
+            doc.text("Sitio web: tunascraft.com · CDMX, México · WhatsApp: +52 55 4474 4531", titleStartX, 24);
 
             // Right Info
             doc.setFontSize(8);
@@ -166,7 +261,7 @@ const Catalog = () => {
 
             // Accent divider bar (Solid amber)
             doc.setFillColor(accentColor[0], accentColor[1], accentColor[2]);
-            doc.rect(0, 30, 210, 2, 'F');
+            doc.rect(0, 32, 210, 2, 'F');
 
             // Build Table Data
             const tableData = filteredProducts.map((p, idx) => {
@@ -174,6 +269,7 @@ const Catalog = () => {
                 const isAvail = p.quantity > 0;
                 return [
                     idx + 1,
+                    { content: '', styles: { minCellHeight: 20 } },
                     p.name || 'Sin nombre',
                     p.category || 'Otros',
                     p.price || `$${(p.rawPrice || 0).toFixed(2)}`,
@@ -183,37 +279,75 @@ const Catalog = () => {
             });
 
             autoTable(doc, {
-                startY: 36,
-                head: [['#', 'Producto', 'Categoría', 'Precio', 'Disponibilidad', 'Descripción']],
+                startY: 38,
+                head: [['#', 'Foto', 'Producto', 'Categoría', 'Precio', 'Disponibilidad', 'Descripción']],
                 body: tableData,
                 theme: 'grid',
                 headStyles: {
                     fillColor: [15, 23, 42],
                     textColor: [255, 255, 255],
-                    fontSize: 8.5,
+                    fontSize: 8,
                     fontStyle: 'bold',
                     halign: 'left',
-                    cellPadding: 3
+                    cellPadding: 2.5
                 },
                 bodyStyles: {
                     textColor: darkText,
-                    fontSize: 8,
-                    cellPadding: 2.5
+                    fontSize: 7.5,
+                    cellPadding: 2,
+                    valign: 'middle'
                 },
                 alternateRowStyles: {
                     fillColor: lightSlate
                 },
                 columnStyles: {
-                    0: { cellWidth: 8, halign: 'center' },
-                    1: { cellWidth: 38, fontStyle: 'bold' },
-                    2: { cellWidth: 24 },
-                    3: { cellWidth: 20, fontStyle: 'bold', textColor: [180, 83, 9] },
-                    4: { cellWidth: 24, halign: 'center' },
-                    5: { cellWidth: 'auto' }
+                    0: { cellWidth: 7, halign: 'center' },
+                    1: { cellWidth: 22, halign: 'center' },
+                    2: { cellWidth: 36, fontStyle: 'bold' },
+                    3: { cellWidth: 20 },
+                    4: { cellWidth: 18, fontStyle: 'bold', textColor: [180, 83, 9] },
+                    5: { cellWidth: 22, halign: 'center' },
+                    6: { cellWidth: 'auto' }
+                },
+                didDrawCell: (data) => {
+                    if (data.section === 'body' && data.column.index === 1) {
+                        const cell = data.cell;
+                        const rowIndex = (Array.isArray(data.row.raw) && typeof data.row.raw[0] === 'number')
+                            ? data.row.raw[0] - 1
+                            : data.row.index;
+                        const imgObj = loadedImages[rowIndex];
+
+                        if (imgObj && imgObj.dataUrl) {
+                            const maxW = cell.width - 2.5;
+                            const maxH = cell.height - 2.5;
+                            const aspect = (imgObj.width || 1) / (imgObj.height || 1);
+                            let imgW = maxW;
+                            let imgH = imgW / aspect;
+                            if (imgH > maxH) {
+                                imgH = maxH;
+                                imgW = imgH * aspect;
+                            }
+                            const imgX = cell.x + (cell.width - imgW) / 2;
+                            const imgY = cell.y + (cell.height - imgH) / 2;
+
+                            try {
+                                doc.addImage(imgObj.dataUrl, 'JPEG', imgX, imgY, imgW, imgH, undefined, 'FAST');
+                            } catch (err) {
+                                console.warn('Error dibujando imagen en celda:', err);
+                            }
+                        } else {
+                            doc.setFontSize(6);
+                            doc.setTextColor(148, 163, 184);
+                            doc.text('Sin foto', cell.x + cell.width / 2, cell.y + cell.height / 2, {
+                                align: 'center',
+                                baseline: 'middle'
+                            });
+                        }
+                    }
                 },
                 didDrawPage: (data) => {
                     const pageCount = doc.internal.getNumberOfPages();
-                    doc.setFontSize(8);
+                    doc.setFontSize(7.5);
                     doc.setTextColor(148, 163, 184);
                     doc.text(
                         `Página ${data.pageNumber} de ${pageCount} · Catálogo Oficial Tuna's Craft · tunascraft.com`,
@@ -222,13 +356,13 @@ const Catalog = () => {
                         { align: 'center' }
                     );
                 },
-                margin: { top: 36, bottom: 14, left: 14, right: 14 }
+                margin: { top: 38, bottom: 14, left: 14, right: 14 }
             });
 
             const categorySlug = activeCategory.toLowerCase().replace(/[^a-z0-9]/g, '_');
             const fileName = `catalogo_tunas_craft_${categorySlug}_${new Date().toISOString().slice(0, 10)}.pdf`;
             doc.save(fileName);
-            showToast('Catálogo PDF descargado con éxito');
+            showToast('Catálogo PDF con fotos descargado con éxito');
         } catch (error) {
             console.error('Error al generar PDF:', error);
             alert('Hubo un error al generar el PDF.');
@@ -275,8 +409,12 @@ const Catalog = () => {
                             ) : (
                                 <FileDown size={18} className="text-amber-400" />
                             )}
-                            <span className="hidden sm:inline">Exportar como PDF</span>
-                            <span className="sm:hidden">PDF</span>
+                            <span className="hidden sm:inline">
+                                {isGeneratingPDF ? 'Generando PDF con fotos...' : 'Exportar como PDF'}
+                            </span>
+                            <span className="sm:hidden">
+                                {isGeneratingPDF ? 'Generando...' : 'PDF'}
+                            </span>
                         </button>
 
                         {/* Cart Link */}
