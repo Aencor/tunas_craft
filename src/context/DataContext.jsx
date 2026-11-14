@@ -58,13 +58,9 @@ export const DataProvider = ({ children }) => {
                     if (parsed && parsed.email && ALLOWED_EMAILS.includes(parsed.email.toLowerCase())) {
                         if (isMounted) setUser(parsed);
 
-                        // Ensure anonymous auth is active in background for Firestore security rules
+                        // Ensure anonymous auth is active in background for Firestore security rules (non-blocking)
                         if (!auth.currentUser) {
-                            try {
-                                await signInAnonymously(auth);
-                            } catch (e) {
-                                console.warn('Background anonymous auth:', e);
-                            }
+                            signInAnonymously(auth).catch(e => console.warn('Background anonymous auth:', e));
                         }
                     } else {
                         localStorage.removeItem('tc_admin_session');
@@ -180,15 +176,6 @@ export const DataProvider = ({ children }) => {
             };
         }
 
-        // Establish Firebase Auth session (anonymous sign-in) so Firestore rules (request.auth != null) are satisfied
-        if (!auth.currentUser) {
-            try {
-                await signInAnonymously(auth);
-            } catch (err) {
-                console.warn('Anonymous sign-in for Firestore rules notice:', err);
-            }
-        }
-
         const adminSession = {
             email: matched.email,
             displayName: matched.displayName,
@@ -203,7 +190,16 @@ export const DataProvider = ({ children }) => {
             console.warn('Could not save session in localStorage', e);
         }
 
+        // Set user immediately so admin dashboard opens with zero delay
         setUser(adminSession);
+
+        // Attempt anonymous auth in the background without blocking UI login
+        if (!auth.currentUser) {
+            signInAnonymously(auth).catch(err => {
+                console.warn('Background anon auth notice:', err);
+            });
+        }
+
         return { success: true, user: adminSession };
     };
 
