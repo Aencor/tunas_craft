@@ -34,7 +34,28 @@ const AdSense = ({
         }
     }, [isDev, isValidSlot]);
 
-    // In development mode: show friendly visual placeholder
+    // If slot is not valid, in development we show an informative card,
+    // but in production we return null to strictly avoid empty ad containers (AdSense policy compliance).
+    if (!isValidSlot) {
+        if (isDev) {
+            return (
+                <div className={`my-6 mx-auto max-w-4xl px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-center ${className}`}>
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 block mb-1">
+                        Google AdSense (Espacio Publicitario)
+                    </span>
+                    <div 
+                        className="bg-slate-950/60 rounded-lg flex items-center justify-center text-xs text-slate-400 border border-slate-800/80 p-4"
+                        style={{ minHeight: `${minHeight}px` }}
+                    >
+                        Configura un slot válido (ej. 10 dígitos) para mostrar el bloque de anuncios de {client}.
+                    </div>
+                </div>
+            );
+        }
+        return null;
+    }
+
+    // In development mode with valid slot: show placeholder
     if (isDev) {
         return (
             <div className={`my-6 mx-auto max-w-4xl px-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-center ${className}`}>
@@ -45,7 +66,7 @@ const AdSense = ({
                     className="bg-slate-950/60 rounded-lg flex items-center justify-center text-xs text-slate-400 border border-slate-800/80"
                     style={{ minHeight: `${minHeight}px` }}
                 >
-                    Cliente: {client} · {isValidSlot ? `Bloque: ${slot}` : 'Auto-Ads / Banner Adaptable'}
+                    Cliente: {client} · Bloque: {slot}
                 </div>
             </div>
         );

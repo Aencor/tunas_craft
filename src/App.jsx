@@ -10,6 +10,10 @@ import PublicScanner from './pages/PublicScanner';
 import PublicManualQuote from './pages/PublicManualQuote';
 import Checkout from './pages/Checkout';
 import Success from './pages/Success';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import Terms from './pages/Terms';
+import ShippingPolicy from './pages/ShippingPolicy';
+import Guides from './pages/Guides';
 import { CartProvider } from './context/CartContext';
 
 function App() {
@@ -28,6 +32,10 @@ function App() {
           <Route path="/venta-fisica" element={<StoreSale />} />
           <Route path="/cotizador" element={<PublicScanner />} />
           <Route path="/calculadora" element={<PublicManualQuote />} />
+          <Route path="/privacidad" element={<PrivacyPolicy />} />
+          <Route path="/terminos" element={<Terms />} />
+          <Route path="/envios-devoluciones" element={<ShippingPolicy />} />
+          <Route path="/guias" element={<Guides />} />
         </Routes>
       </Router>
     </CartProvider>

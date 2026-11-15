@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calculator, DollarSign, Clock, Scale, ArrowLeft, Percent } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import AdSense from '../components/AdSense';
 import SEO from '../components/SEO';
 import { Zap, Droplets } from 'lucide-react';
 
@@ -113,8 +112,6 @@ const PublicManualQuote = () => {
             </header>
 
             <main className="max-w-4xl mx-auto px-4 py-8">
-                <AdSense slot="1234567890" />
-
                 <div className="bg-slate-800 rounded-2xl border border-slate-700 shadow-2xl overflow-hidden">
                     <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                         
@@ -315,8 +312,6 @@ const PublicManualQuote = () => {
                         </div>
                     </div>
                 </div>
-
-                <AdSense slot="0987654321" />
 
             </main>
         </div>

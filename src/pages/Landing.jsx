@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import Hero3D from '../components/Hero3D';
-import AdSense from '../components/AdSense';
 import SEO from '../components/SEO';
 import { 
     Menu, X, Instagram, Facebook, Ruler, Palette, Home, 
@@ -80,25 +79,18 @@ const Landing = () => {
                         </Link>
 
                         {/* Desktop Nav Links */}
-                        <div className="hidden md:flex space-x-7 items-center text-sm font-medium">
-                            <a href="#gallery" className="text-slate-300 hover:text-white transition-colors">Catálogo Rápido</a>
+                        <div className="hidden md:flex space-x-6 items-center text-sm font-medium">
                             <a href="#services" className="text-slate-300 hover:text-white transition-colors">Servicios</a>
-                            <a href="#about" className="text-slate-300 hover:text-white transition-colors">Nosotros</a>
-                            <a href="#delivery" className="text-slate-300 hover:text-white transition-colors">Entregas y Pagos</a>
-                            <Link to="/status" className="text-slate-300 hover:text-white transition-colors">Estatus de Pedido</Link>
+                            <Link to="/catalogo" className="text-slate-300 hover:text-white transition-colors">Catálogo</Link>
+                            <Link to="/guias" className="text-slate-300 hover:text-white transition-colors">Guías 3D</Link>
+                            <a href="#delivery" className="text-slate-300 hover:text-white transition-colors">Entregas</a>
+                            <Link to="/status" className="text-slate-300 hover:text-white transition-colors">Estatus</Link>
                             
                             <Link 
-                                to="/catalogo" 
-                                className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2 rounded-xl transition-colors font-semibold"
-                            >
-                                Catálogo Completo
-                            </Link>
-
-                            <Link 
                                 to="/quote" 
-                                className="bg-amber-500 hover:bg-amber-400 text-slate-950 px-5 py-2.5 rounded-xl font-bold transition-all shadow-md shadow-amber-500/20 active:scale-95"
+                                className="bg-amber-500 hover:bg-amber-400 text-slate-950 px-4 py-2 rounded-xl font-bold transition-all shadow-md shadow-amber-500/20 active:scale-95 text-xs uppercase tracking-wider"
                             >
-                                Cotizar Ahora
+                                Cotizar 3D
                             </Link>
                         </div>
 
@@ -407,11 +399,6 @@ const Landing = () => {
                 </div>
             </section>
 
-            {/* AdSense Zone */}
-            <div className="container mx-auto px-4 max-w-4xl py-4">
-                <AdSense slot="1234567890" />
-            </div>
-
             {/* Gallery / Catalog Showcase Section */}
             <section id="gallery" className="py-24 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 border-b border-slate-900">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mb-10">
@@ -707,44 +694,106 @@ const Landing = () => {
                 </div>
             )}
 
-            {/* Modern Footer (Clean, NO emoji excess) */}
-            <footer className="bg-slate-950 py-16 border-t border-slate-900 text-center">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            {/* Modern High-Trust Footer (AdSense & SEO Compliant) */}
+            <footer className="bg-slate-950 pt-16 pb-12 border-t border-slate-900 text-left">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
                     
-                    <div className="flex justify-center gap-6">
-                        <a 
-                            href="https://facebook.com/tunascraft3d" 
-                            target="_blank" 
-                            rel="noreferrer" 
-                            className="p-3 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 transition-colors"
-                            aria-label="Facebook"
-                        >
-                            <Facebook size={20} />
-                        </a>
-                        <a 
-                            href="https://instagram.com/tunas_craft" 
-                            target="_blank" 
-                            rel="noreferrer" 
-                            className="p-3 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 transition-colors"
-                            aria-label="Instagram"
-                        >
-                            <Instagram size={20} />
-                        </a>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                        {/* Col 1: Brand & Bio */}
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-3">
+                                <img src="/logo.png" alt="Tuna's Craft" className="h-9 w-auto rounded-lg" />
+                                <span className="font-display font-bold text-lg text-white">Tuna's Craft</span>
+                            </div>
+                            <p className="text-xs text-slate-400 leading-relaxed">
+                                Taller profesional de impresión 3D, prototipado rápido y modelado digital con sede en Ciudad de México. Fabricación aditiva de alta precisión para proyectos personales, cosplay, arte e industria.
+                            </p>
+                            <div className="flex gap-3 pt-1">
+                                <a 
+                                    href="https://facebook.com/tunascraft3d" 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 transition-colors"
+                                    aria-label="Facebook"
+                                >
+                                    <Facebook size={16} />
+                                </a>
+                                <a 
+                                    href="https://instagram.com/tunas_craft" 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="p-2.5 bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl border border-slate-800 transition-colors"
+                                    aria-label="Instagram"
+                                >
+                                    <Instagram size={16} />
+                                </a>
+                            </div>
+                        </div>
+
+                        {/* Col 2: Servicios & Herramientas */}
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400">Servicios & Tienda</h4>
+                            <ul className="space-y-2 text-xs text-slate-400">
+                                <li><Link to="/catalogo" className="hover:text-white transition-colors">Catálogo de Productos 3D</Link></li>
+                                <li><Link to="/cotizador" className="hover:text-white transition-colors">Cotizador STL / 3MF Online</Link></li>
+                                <li><Link to="/calculadora" className="hover:text-white transition-colors">Calculadora de Filamento</Link></li>
+                                <li><Link to="/quote" className="hover:text-white transition-colors">Cotización Personalizada</Link></li>
+                                <li><Link to="/status" className="hover:text-white transition-colors">Rastrear Estatus de Pedido</Link></li>
+                            </ul>
+                        </div>
+
+                        {/* Col 3: Guías & Conocimiento (Publisher Content) */}
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400">Guías & Artículos</h4>
+                            <ul className="space-y-2 text-xs text-slate-400">
+                                <li><Link to="/guias" className="hover:text-white transition-colors">Guía de Materiales (PLA vs PETG)</Link></li>
+                                <li><Link to="/guias" className="hover:text-white transition-colors">Preparación de Archivos STL</Link></li>
+                                <li><Link to="/guias" className="hover:text-white transition-colors">Técnicas de Postprocesado y Pintura</Link></li>
+                                <li><a href="#delivery" className="hover:text-white transition-colors">Modalidades de Entrega en CDMX</a></li>
+                            </ul>
+                        </div>
+
+                        {/* Col 4: Legal & Contacto (AdSense Required) */}
+                        <div className="space-y-3">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-amber-400">Políticas & Legal</h4>
+                            <ul className="space-y-2 text-xs text-slate-400">
+                                <li>
+                                    <Link to="/privacidad" className="hover:text-white transition-colors font-medium text-slate-300">
+                                        Política de Privacidad
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/terminos" className="hover:text-white transition-colors font-medium text-slate-300">
+                                        Términos y Condiciones
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/envios-devoluciones" className="hover:text-white transition-colors font-medium text-slate-300">
+                                        Envíos, Entregas y Garantías
+                                    </Link>
+                                </li>
+                                <li className="pt-2 text-[11px] text-slate-500">
+                                    WhatsApp: <span className="text-slate-400">+52 55 4474 4531</span>
+                                </li>
+                                <li className="text-[11px] text-slate-500">
+                                    Ubicación: <span className="text-slate-400">Metro Chabacano, CDMX</span>
+                                </li>
+                            </ul>
+                        </div>
                     </div>
 
-                    <div className="text-xs text-slate-400 space-y-1">
-                        <p className="font-medium text-slate-300">
-                            &copy; 2026 Tuna's Craft · Impresión 3D y Modelado Digital · Ciudad de México
+                    {/* Bottom Disclaimer & Copyright */}
+                    <div className="pt-8 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
+                        <p>
+                            &copy; 2026 Tuna's Craft · Todos los derechos reservados. Ciudad de México.
                         </p>
-                        <p className="text-slate-500">
-                            Todos los derechos reservados. Diseñado para ofrecer la más alta calidad en fabricación aditiva.
-                        </p>
-                    </div>
-
-                    <div className="pt-4 border-t border-slate-900">
-                        <Link to="/admin" className="text-[11px] text-slate-600 hover:text-slate-400 transition-colors">
-                            Acceso de Administración
-                        </Link>
+                        <div className="flex items-center gap-4 text-[11px]">
+                            <Link to="/privacidad" className="hover:text-slate-400 transition-colors">Privacidad</Link>
+                            <span>·</span>
+                            <Link to="/terminos" className="hover:text-slate-400 transition-colors">Términos</Link>
+                            <span>·</span>
+                            <Link to="/admin" className="hover:text-slate-400 transition-colors">Admin</Link>
+                        </div>
                     </div>
                 </div>
             </footer>

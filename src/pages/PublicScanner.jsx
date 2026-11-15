@@ -6,7 +6,6 @@ import { Upload, Calculator, DollarSign, AlertCircle, X, ArrowLeft } from 'lucid
 import { Link } from 'react-router-dom';
 // Duplicate Link import removed
 import * as THREE from 'three';
-import AdBanner from '../components/AdBanner';
 import SEO from '../components/SEO';
 
 // --- AD SENSE COMPONENT ---
@@ -135,10 +134,6 @@ const PublicScanner = () => {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 py-8">
-                
-                {/* Ad Banner Top */}
-                <AdBanner slotId="TOP_BANNER_ID" />
-
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     
                     {/* LEFT: 3D Viewer Area */}
@@ -274,9 +269,6 @@ const PublicScanner = () => {
                                 </p>
                             </div>
                         </div>
-
-                        {/* Ad Banner Sidebar/Bottom */}
-                        <AdBanner slotId="SIDEBAR_BANNER_ID" />
 
                     </div>
                 </div>
