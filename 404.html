@@ -52,6 +52,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin />
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
+    <link rel="preconnect" href="https://connect.facebook.net" crossorigin />
     <link rel="preconnect" href="https://lh3.googleusercontent.com" crossorigin />
 
     <!-- Google Fonts -->
@@ -155,10 +156,32 @@
       gtag('js', new Date());
       gtag('config', 'G-BMF86Q9D45');
     </script>
-    <script type="module" crossorigin src="/assets/index-D53AfAYt.js"></script>
+
+    <!-- Meta Pixel Code -->
+    <script>
+      !function(f,b,e,v,n,t,s)
+      {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+      n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+      if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+      n.queue=[];t=b.createElement(e);t.async=!0;
+      t.src=v;s=b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t,s)}(window, document,'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '1148286438063692');
+      fbq('track', 'PageView');
+    </script>
+    <!-- End Meta Pixel Code -->
+    <script type="module" crossorigin src="/assets/index-BRk5Z0F4.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-I6m146ds.css">
   </head>
   <body class="bg-brand-dark text-slate-100 font-sans antialiased selection:bg-brand-orange selection:text-white">
+    <!-- Meta Pixel Fallback (noscript) -->
+    <noscript>
+      <img height="1" width="1" style="display:none"
+        src="https://www.facebook.com/tr?id=1148286438063692&ev=PageView&noscript=1"
+        alt=""
+      />
+    </noscript>
     <div id="root"></div>
   </body>
 </html>
