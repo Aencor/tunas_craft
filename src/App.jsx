@@ -1,5 +1,5 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Landing from './pages/Landing';
 import AdminDashboard from './pages/AdminDashboard';
 import Quote from './pages/Quote';
@@ -16,10 +16,35 @@ import ShippingPolicy from './pages/ShippingPolicy';
 import Guides from './pages/Guides';
 import { CartProvider } from './context/CartContext';
 
+function AnalyticsTracker() {
+  const location = useLocation();
+  const isInitial = useRef(true);
+
+  useEffect(() => {
+    if (isInitial.current) {
+      isInitial.current = false;
+      return;
+    }
+    // Meta Pixel SPA PageView
+    if (typeof window.fbq === 'function') {
+      window.fbq('track', 'PageView');
+    }
+    // Google Analytics SPA PageView
+    if (typeof window.gtag === 'function') {
+      window.gtag('config', 'G-BMF86Q9D45', {
+        page_path: location.pathname + location.search
+      });
+    }
+  }, [location]);
+
+  return null;
+}
+
 function App() {
   return (
     <CartProvider>
       <Router>
+        <AnalyticsTracker />
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/admin" element={<AdminDashboard />} />
